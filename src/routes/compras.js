@@ -1,26 +1,28 @@
 const express = require('express');
-const { getDb } = require('../db');
 const router = express.Router();
+const { getDb } = require('../db');
+const ExcelJS = require('exceljs');
 
 /**
- * FORMATEADOR DE FECHA
- * Convierte fecha de MySQL a formato 09/12/2025
+ * Formatea fecha YYYY-MM-DD → DD/MM/YYYY
  */
 function formatFecha(value) {
   if (!value) return '';
-  const d = (value instanceof Date) ? value : new Date(value);
+  const d = new Date(value);
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 }
 
-// =============================================================
-// LISTADO GENERAL
-// =============================================================
+/**
+ * ==========================
+ * LISTADO GENERAL
+ * ==========================
+ */
 router.get('/', (req, res) => {
   const db = getDb();
-  const { placa, proveedor, cedis } = req.query;
+  const { placa, proveedor, cedis, desde, hasta } = req.query;
 
   let conditions = [];
   let params = [];
@@ -37,15 +39,21 @@ router.get('/', (req, res) => {
     conditions.push('cedis LIKE ?');
     params.push('%' + cedis + '%');
   }
-
-  let whereClause = '';
-  if (conditions.length > 0) {
-    whereClause = 'WHERE ' + conditions.join(' AND ');
+  if (desde) {
+    conditions.push('fecha >= ?');
+    params.push(desde);
   }
+  if (hasta) {
+    conditions.push('fecha <= ?');
+    params.push(hasta);
+  }
+
+  let whereClause = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
   const sql = `
     SELECT id, fecha, cedis, proveedor, placa, producto,
-           cantidad, precio_unitario, precio_total, solicito, observacion
+           cantidad, precio_unitario, precio_total,
+           solicito, observacion
     FROM compras
     ${whereClause}
     ORDER BY fecha DESC, id DESC
@@ -57,36 +65,44 @@ router.get('/', (req, res) => {
       return res.status(500).send('Error consultando MySQL');
     }
 
-    // 👉 FORMATEAMOS FECHA PARA LISTADO
-    rows.forEach(r => {
+    rows.forEach((r) => {
       r.fecha_formateada = formatFecha(r.fecha);
     });
 
     res.render('compras_list', {
-      title: 'Compras',
+      title: 'Compras registradas',
       compras: rows,
-      filtros: { placa, proveedor, cedis },
+      filtros: { placa, proveedor, cedis, desde, hasta },
     });
   });
 });
 
-// =============================================================
-// FORMULARIO NUEVO
-// =============================================================
+/**
+ * ==========================
+ * FORMULARIO NUEVA COMPRA
+ * ==========================
+ */
 router.get('/nueva', (req, res) => {
-  res.render('compras_new', { title: 'Nueva compra', error: null, form: {} });
+  res.render('compras_new', {
+    title: 'Registrar nueva compra',
+    error: null,
+    form: {},
+  });
 });
 
-// =============================================================
-// HISTORIAL POR PLACA
-// =============================================================
+/**
+ * ==========================
+ * HISTORIAL POR PLACA
+ * ==========================
+ */
 router.get('/placa/:placa', (req, res) => {
   const db = getDb();
   const placa = req.params.placa;
 
   const sql = `
     SELECT id, fecha, cedis, proveedor, placa, producto,
-           cantidad, precio_unitario, precio_total, solicito, observacion
+           cantidad, precio_unitario, precio_total,
+           solicito, observacion
     FROM compras
     WHERE placa = ?
     ORDER BY fecha DESC, id DESC
@@ -100,10 +116,11 @@ router.get('/placa/:placa', (req, res) => {
 
     let totalMonto = 0;
     let totalCantidad = 0;
+
     rows.forEach((c) => {
       totalMonto += c.precio_total;
       totalCantidad += c.cantidad;
-      c.fecha_formateada = formatFecha(c.fecha);   // 👉 FECHA BONITA
+      c.fecha_formateada = formatFecha(c.fecha);
     });
 
     res.render('compras_by_placa', {
@@ -116,9 +133,11 @@ router.get('/placa/:placa', (req, res) => {
   });
 });
 
-// =============================================================
-// INSERTAR NUEVA COMPRA
-// =============================================================
+/**
+ * ==========================
+ * INSERTAR NUEVA COMPRA
+ * ==========================
+ */
 router.post('/', (req, res) => {
   const db = getDb();
   const {
@@ -133,9 +152,18 @@ router.post('/', (req, res) => {
     observacion,
   } = req.body;
 
-  if (!fecha || !cedis || !proveedor || !placa || !producto || !cantidad || !precio_unitario || !solicito) {
+  if (
+    !fecha ||
+    !cedis ||
+    !proveedor ||
+    !placa ||
+    !producto ||
+    !cantidad ||
+    !precio_unitario ||
+    !solicito
+  ) {
     return res.status(400).render('compras_new', {
-      title: 'Nueva compra',
+      title: 'Registrar nueva compra',
       error: 'Todos los campos marcados con * son obligatorios.',
       form: req.body,
     });
@@ -143,12 +171,18 @@ router.post('/', (req, res) => {
 
   const cantidadNum = parseFloat(cantidad);
   const precioUnitNum = parseFloat(precio_unitario);
+
+  if (isNaN(cantidadNum) || isNaN(precioUnitNum)) {
+    return res.status(400).render('compras_new', {
+      title: 'Registrar nueva compra',
+      error: 'Cantidad y precio unitario deben ser números válidos.',
+      form: req.body,
+    });
+  }
+
   const precioTotal = cantidadNum * precioUnitNum;
 
-  // 👉 FECHA PARA MYSQL
   const fechaFinal = new Date(fecha).toISOString().slice(0, 10);
-
-  // 👉 TIMESTAMP PARA MYSQL
   const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
   const sql = `
@@ -174,17 +208,112 @@ router.post('/', (req, res) => {
     createdAt,
   ];
 
-  db.query(sql, params, function (err, result) {
+  db.query(sql, params, (err, result) => {
     if (err) {
-      console.error('⚠️ ERROR INSERT:', err);
+      console.error('ERROR INSERTANDO COMPRA:', err);
       return res.status(500).render('compras_new', {
-        title: 'Nueva compra',
-        error: `⚠️ ERROR MySQL: ${err.message}`,
+        title: 'Registrar nueva compra',
+        error: `Error guardando la compra en MySQL: ${err.message}`,
         form: req.body,
       });
     }
 
     res.redirect(`/compras/placa/${placa.trim().toUpperCase()}`);
+  });
+});
+
+/**
+ * ==========================
+ * DESCARGAR EXCEL SEGÚN FILTRO
+ * ==========================
+ */
+router.get('/excel', (req, res) => {
+  const db = getDb();
+  const { placa, proveedor, cedis, desde, hasta } = req.query;
+
+  let conditions = [];
+  let params = [];
+
+  if (placa) {
+    conditions.push('placa LIKE ?');
+    params.push('%' + placa + '%');
+  }
+  if (proveedor) {
+    conditions.push('proveedor LIKE ?');
+    params.push('%' + proveedor + '%');
+  }
+  if (cedis) {
+    conditions.push('cedis LIKE ?');
+    params.push('%' + cedis + '%');
+  }
+  if (desde) {
+    conditions.push('fecha >= ?');
+    params.push(desde);
+  }
+  if (hasta) {
+    conditions.push('fecha <= ?');
+    params.push(hasta);
+  }
+
+  let whereClause = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  const sql = `
+    SELECT fecha, cedis, proveedor, placa, producto,
+           cantidad, precio_unitario, precio_total,
+           solicito, observacion
+    FROM compras
+    ${whereClause}
+    ORDER BY fecha DESC
+  `;
+
+  db.query(sql, params, async (err, rows) => {
+    if (err) {
+      console.error('ERROR EXCEL:', err);
+      return res.status(500).send('Error generando Excel');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Reporte Compras');
+
+    sheet.columns = [
+      { header: 'Fecha', key: 'fecha', width: 15 },
+      { header: 'CEDIS', key: 'cedis', width: 15 },
+      { header: 'Proveedor', key: 'proveedor', width: 25 },
+      { header: 'Placa', key: 'placa', width: 12 },
+      { header: 'Producto', key: 'producto', width: 30 },
+      { header: 'Cantidad', key: 'cantidad', width: 10 },
+      { header: 'P.Unitario', key: 'precio_unitario', width: 14 },
+      { header: 'Total', key: 'precio_total', width: 14 },
+      { header: 'Solicitó', key: 'solicito', width: 15 },
+      { header: 'Obs', key: 'observacion', width: 25 },
+    ];
+
+    rows.forEach((r) => {
+      sheet.addRow({
+        fecha: formatFecha(r.fecha),
+        cedis: r.cedis,
+        proveedor: r.proveedor,
+        placa: r.placa,
+        producto: r.producto,
+        cantidad: r.cantidad,
+        precio_unitario: r.precio_unitario,
+        precio_total: r.precio_total,
+        solicito: r.solicito,
+        observacion: r.observacion || '',
+      });
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="reporte_compras.xlsx"'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
   });
 });
 

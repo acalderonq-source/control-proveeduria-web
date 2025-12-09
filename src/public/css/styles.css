@@ -1,15 +1,81 @@
 body {
-  background-color: #f5f5f5;
+  font-family: Arial, sans-serif;
 }
 
-main.container {
-  background-color: #ffffff;
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+header {
+  padding: 10px 20px;
+  background: #003366;
+  color: white;
+  font-size: 18px;
 }
 
-table td,
-table th {
-  vertical-align: middle;
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* =======================
+   TABLA BONITA
+======================= */
+.table-report {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  margin-top: 10px;
+}
+
+.table-report th {
+  background: #0069d9;
+  color: white;
+  padding: 8px;
+  text-align: left;
+}
+
+.table-report td {
+  padding: 8px;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.table-report tr:nth-child(even) {
+  background: #f7f7f7;
+}
+
+.table-report tr:hover {
+  background: #d9ecff;
+}
+
+/* =======================
+   BOTÓN EXCEL
+======================= */
+.btn-excel {
+  background: #28a745;
+  border: none;
+  padding: 7px 15px;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-excel:hover {
+  background: #218838;
+}
+
+/* =======================
+   FILTROS
+======================= */
+.filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.filter-row input {
+  padding: 6px;
+  min-width: 140px;
+}
+
+.filter-row button {
+  padding: 6px 15px;
 }

@@ -1,30 +1,48 @@
 <%- include('partials/header') %>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h3">Compras registradas</h1>
-  <a href="/compras/nueva" class="btn btn-primary">+ Nueva compra</a>
-</div>
+<div class="container">
 
-<form class="row g-2 mb-3" method="get" action="/compras">
-  <div class="col-md-3">
-    <label class="form-label">Placa</label>
-    <input type="text" name="placa" class="form-control" value="<%= filtros.placa || '' %>" placeholder="Ej: 173369">
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">Proveedor</label>
-    <input type="text" name="proveedor" class="form-control" value="<%= filtros.proveedor || '' %>">
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">CEDIS</label>
-    <input type="text" name="cedis" class="form-control" value="<%= filtros.cedis || '' %>" placeholder="Ej: Nicoya">
-  </div>
-  <div class="col-md-3 d-flex align-items-end gap-2">
-    <button type="submit" class="btn btn-outline-primary w-100">Filtrar</button>
-  </div>
-</form>
+  <h2>Compras registradas</h2>
 
-<div class="table-responsive">
-  <table class="table table-striped table-sm align-middle">
+  <form action="/compras" method="get">
+
+    <div class="filter-row">
+      <input type="text" name="placa" placeholder="Placa"
+             value="<%= filtros.placa || '' %>">
+
+      <input type="text" name="proveedor" placeholder="Proveedor"
+             value="<%= filtros.proveedor || '' %>">
+
+      <input type="text" name="cedis" placeholder="CEDIS"
+             value="<%= filtros.cedis || '' %>">
+
+      <!-- NUEVOS CAMPOS DE FECHA -->
+      <input type="date" name="desde"
+             value="<%= filtros.desde || '' %>">
+
+      <input type="date" name="hasta"
+             value="<%= filtros.hasta || '' %>">
+
+      <button type="submit" class="btn">Filtrar</button>
+
+      <!-- BOTÓN DE EXCEL -->
+      <a
+        class="btn-excel"
+        href="/compras/excel?<%= 'placa='+(filtros.placa||'')+
+                           '&proveedor='+(filtros.proveedor||'')+
+                           '&cedis='+(filtros.cedis||'')+
+                           '&desde='+(filtros.desde||'')+
+                           '&hasta='+(filtros.hasta||'') %>"
+      >
+        Descargar Excel
+      </a>
+
+      <a href="/compras/nueva" class="btn">+ Nueva compra</a>
+    </div>
+
+  </form>
+
+  <table class="table-report">
     <thead>
       <tr>
         <th>Fecha</th>
@@ -32,40 +50,32 @@
         <th>Proveedor</th>
         <th>Placa</th>
         <th>Producto</th>
-        <th class="text-end">Cantidad</th>
-        <th class="text-end">P. Unitario</th>
-        <th class="text-end">Total</th>
+        <th>Cantidad</th>
+        <th>P. Unitario</th>
+        <th>Total</th>
         <th>Solicitó</th>
         <th>Obs.</th>
       </tr>
     </thead>
+
     <tbody>
-      <% if (compras.length === 0) { %>
-        <tr>
-          <td colspan="10" class="text-center text-muted">No hay compras registradas todavía.</td>
-        </tr>
-      <% } %>
       <% compras.forEach(c => { %>
         <tr>
           <td><%= c.fecha_formateada %></td>
-
           <td><%= c.cedis %></td>
           <td><%= c.proveedor %></td>
-          <td>
-            <a href="/compras/placa/<%= c.placa %>">
-              <strong><%= c.placa %></strong>
-            </a>
-          </td>
+          <td><a href="/compras/placa/<%= c.placa %>"><%= c.placa %></a></td>
           <td><%= c.producto %></td>
-          <td class="text-end"><%= c.cantidad %></td>
-          <td class="text-end">₡ <%= c.precio_unitario.toLocaleString('es-CR') %></td>
-          <td class="text-end fw-semibold">₡ <%= c.precio_total.toLocaleString('es-CR') %></td>
+          <td><%= c.cantidad %></td>
+          <td>₡ <%= c.precio_unitario.toLocaleString() %></td>
+          <td>₡ <%= c.precio_total.toLocaleString() %></td>
           <td><%= c.solicito %></td>
           <td><%= c.observacion || '' %></td>
         </tr>
       <% }) %>
     </tbody>
   </table>
+
 </div>
 
 <%- include('partials/footer') %>
