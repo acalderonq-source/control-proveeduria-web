@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-0">Historial de compras</h1>
+    <p class="text-muted mb-0">Placa: <strong><%= placa %></strong></p>
+  </div>
+  <a href="/compras" class="btn btn-outline-secondary">Volver al listado</a>
+</div>
+
+<div class="mb-3">
+  <span class="badge bg-primary me-2">Total cantidad: <%= totalCantidad %></span>
+  <span class="badge bg-success">Total gastado: ₡ <%= totalMonto.toLocaleString('es-CR') %></span>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-striped table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>CEDIS</th>
+        <th>Proveedor</th>
+        <th>Producto</th>
+        <th class="text-end">Cantidad</th>
+        <th class="text-end">P. Unitario</th>
+        <th class="text-end">Total</th>
+        <th>Solicitó</th>
+        <th>Obs.</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (compras.length === 0) { %>
+        <tr>
+          <td colspan="9" class="text-center text-muted">No hay compras registradas para esta placa.</td>
+        </tr>
+      <% } %>
+      <% compras.forEach(c => { %>
+        <tr>
+          <td><%= c.fecha %></td>
+          <td><%= c.cedis %></td>
+          <td><%= c.proveedor %></td>
+          <td><%= c.producto %></td>
+          <td class="text-end"><%= c.cantidad %></td>
+          <td class="text-end">₡ <%= c.precio_unitario.toLocaleString('es-CR') %></td>
+          <td class="text-end fw-semibold">₡ <%= c.precio_total.toLocaleString('es-CR') %></td>
+          <td><%= c.solicito %></td>
+          <td><%= c.observacion || '' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<%- include('partials/footer') %>
