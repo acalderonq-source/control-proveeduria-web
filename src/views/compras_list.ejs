@@ -1,12 +1,18 @@
 <%- include('partials/header') %>
+<%- include('partials/header') %>
 
 <div class="container">
+  <h2>Control semanal de compras</h2>
 
-  <h2>Compras registradas</h2>
+  <% if (filtros.semana) { %>
+    <h4>Total semana: ₡ <%= totalSemana.toLocaleString() %></h4>
+  <% } %>
 
-  <form action="/compras" method="get">
-
+  <form method="get" action="/compras">
     <div class="filter-row">
+
+      <input type="week" name="semana" value="<%= filtros.semana || '' %>">
+
       <input type="text" name="placa" placeholder="Placa"
              value="<%= filtros.placa || '' %>">
 
@@ -16,66 +22,53 @@
       <input type="text" name="cedis" placeholder="CEDIS"
              value="<%= filtros.cedis || '' %>">
 
-      <!-- NUEVOS CAMPOS DE FECHA -->
-      <input type="date" name="desde"
-             value="<%= filtros.desde || '' %>">
+      <input type="date" name="desde" value="<%= filtros.desde || '' %>">
+      <input type="date" name="hasta" value="<%= filtros.hasta || '' %>">
 
-      <input type="date" name="hasta"
-             value="<%= filtros.hasta || '' %>">
+      <button type="submit">Filtrar</button>
 
-      <button type="submit" class="btn">Filtrar</button>
-
-      <!-- BOTÓN DE EXCEL -->
-      <a
-        class="btn-excel"
-        href="/compras/excel?<%= 'placa='+(filtros.placa||'')+
-                           '&proveedor='+(filtros.proveedor||'')+
-                           '&cedis='+(filtros.cedis||'')+
-                           '&desde='+(filtros.desde||'')+
-                           '&hasta='+(filtros.hasta||'') %>"
-      >
+      <a class="btn-excel"
+         href="/compras/excel?placa=<%= filtros.placa || '' %>
+         &proveedor=<%= filtros.proveedor || '' %>
+         &cedis=<%= filtros.cedis || '' %>
+         &desde=<%= filtros.desde || '' %>
+         &hasta=<%= filtros.hasta || '' %>
+         &semana=<%= filtros.semana || '' %>">
         Descargar Excel
       </a>
 
-      <a href="/compras/nueva" class="btn">+ Nueva compra</a>
     </div>
-
   </form>
 
   <table class="table-report">
     <thead>
       <tr>
+        <th>Semana</th>
         <th>Fecha</th>
         <th>CEDIS</th>
         <th>Proveedor</th>
         <th>Placa</th>
         <th>Producto</th>
-        <th>Cantidad</th>
-        <th>P. Unitario</th>
-        <th>Total</th>
-        <th>Solicitó</th>
-        <th>Obs.</th>
+        <th>Cant</th>
+        <th>Total ₡</th>
       </tr>
     </thead>
 
     <tbody>
       <% compras.forEach(c => { %>
         <tr>
+          <td><%= c.semana_label %></td>
           <td><%= c.fecha_formateada %></td>
           <td><%= c.cedis %></td>
           <td><%= c.proveedor %></td>
           <td><a href="/compras/placa/<%= c.placa %>"><%= c.placa %></a></td>
           <td><%= c.producto %></td>
           <td><%= c.cantidad %></td>
-          <td>₡ <%= c.precio_unitario.toLocaleString() %></td>
           <td>₡ <%= c.precio_total.toLocaleString() %></td>
-          <td><%= c.solicito %></td>
-          <td><%= c.observacion || '' %></td>
         </tr>
       <% }) %>
     </tbody>
   </table>
-
 </div>
 
 <%- include('partials/footer') %>
