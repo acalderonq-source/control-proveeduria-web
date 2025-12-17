@@ -1,0 +1,51 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <h1>Nueva factura</h1>
+
+  <% if (error) { %>
+    <div class="alert-error"><%= error %></div>
+  <% } %>
+
+  <form action="/compras/factura" method="POST" class="form-2col">
+
+    <div class="form-group">
+      <label>Proveedor *</label>
+      <select name="proveedor" required>
+        <option value="">Seleccione proveedor</option>
+        <option value="Purdy">Purdy</option>
+        <option value="Maxi">Maxi</option>
+        <option value="Servi">Servi</option>
+        <option value="Daitoma">Daitoma</option>
+        <option value="Aros y Llantas Mundiales">Aros y Llantas Mundiales</option>
+        <option value="ET Baterías">ET Baterías</option>
+        <option value="Lapa Green">Lapa Green</option>
+        <option value="<%= form.proveedor || '' %>" selected hidden><%= form.proveedor || '' %></option>
+      </select>
+      <small class="hint">Si no aparece, luego lo agregamos (te lo hago en la siguiente mejora).</small>
+    </div>
+
+    <div class="form-group">
+      <label>N° Factura *</label>
+      <input type="text" name="numero" placeholder="Ej: 50681245300" required value="<%= form.numero || '' %>">
+    </div>
+
+    <div class="form-group">
+      <label>CEDIS *</label>
+      <input type="text" name="cedis" placeholder="Ej: Nicoya" required value="<%= form.cedis || '' %>">
+    </div>
+
+    <div class="form-group">
+      <label>Fecha *</label>
+      <input type="date" name="fecha" required value="<%= form.fecha || '' %>">
+    </div>
+
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="/compras">Cancelar</a>
+      <button class="btn btn-primary" type="submit">Empezar factura</button>
+    </div>
+
+  </form>
+</div>
+
+<%- include('partials/footer') %>

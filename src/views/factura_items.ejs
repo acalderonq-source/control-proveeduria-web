@@ -1,0 +1,108 @@
+<%- include('partials/header') %>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1>Factura <span class="mono"><%= factura.numero %></span></h1>
+      <div class="subline">
+        <span class="pill"><strong>Proveedor:</strong> <%= factura.proveedor %></span>
+        <span class="pill"><strong>CEDIS:</strong> <%= factura.cedis %></span>
+      </div>
+    </div>
+
+    <div class="page-actions">
+      <a class="btn btn-secondary" href="/compras/factura/<%= factura.id %>">Ver factura</a>
+      <a class="btn btn-success" href="/compras/factura/<%= factura.id %>/excel">Descargar Excel</a>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Ítems registrados</div>
+      <div class="kpi-value"><%= items.length %></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total factura (interno)</div>
+      <div class="kpi-value">₡ <%= Number(total).toFixed(2) %></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Agregar ítem</h2>
+
+    <form action="/compras/factura/<%= factura.id %>/items" method="POST" class="form-3col">
+      <div class="form-group">
+        <label>Placa *</label>
+        <input name="placa" placeholder="C173369" required>
+      </div>
+
+      <div class="form-group">
+        <label>Producto *</label>
+        <input name="producto" placeholder="Ej: Válvula de freno" required>
+      </div>
+
+      <div class="form-group">
+        <label>Cantidad *</label>
+        <input type="number" step="0.01" name="cantidad" value="1" required>
+      </div>
+
+      <div class="form-group">
+        <label>Precio unitario (₡) *</label>
+        <input type="number" step="0.01" name="precio_unitario" required>
+      </div>
+
+      <div class="form-group">
+        <label>Solicitó *</label>
+        <input name="solicito" placeholder="Ej: Victoria" required>
+      </div>
+
+      <div class="form-group">
+        <label>Observación</label>
+        <input name="observacion" placeholder="Opcional">
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Guardar y agregar otro</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Ítems en esta factura</h2>
+
+    <% if (!items.length) { %>
+      <p class="muted">Aún no hay ítems. Agregá el primero arriba.</p>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Placa</th>
+              <th>Producto</th>
+              <th>Cant</th>
+              <th>P. Unitario</th>
+              <th>Total</th>
+              <th>Solicitó</th>
+              <th>Obs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% items.forEach(i => { %>
+              <tr>
+                <td class="mono"><%= i.placa %></td>
+                <td><%= i.producto %></td>
+                <td><%= i.cantidad %></td>
+                <td>₡ <%= Number(i.precio_unitario).toFixed(2) %></td>
+                <td><strong>₡ <%= Number(i.precio_total).toFixed(2) %></strong></td>
+                <td><%= i.solicito %></td>
+                <td><%= i.observacion || '' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

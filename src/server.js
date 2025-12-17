@@ -1,38 +1,44 @@
-require('dotenv').config();
-const path = require('path');
+require('dotenv').config(); // 👈 SIEMPRE PRIMERO
+
 const express = require('express');
-const morgan = require('morgan');
-const comprasRouter = require('./routes/compras');
-const { initDb } = require('./db');
+const path = require('path');
+
+const comprasRoutes = require('./routes/compras');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Inicializar base de datos
-initDb();
-
-// Configuración de vistas
-app.set('views', path.join(__dirname, 'views'));
+// ============================
+// CONFIG GENERAL
+// ============================
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-// Middlewares
-app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-// Ruta principal
+// Archivos estáticos
+app.use('/css', express.static(path.join(__dirname, 'public/css')));
+
+// ============================
+// RUTAS
+// ============================
 app.get('/', (req, res) => {
   res.redirect('/compras');
 });
 
-// Rutas de compras
-app.use('/compras', comprasRouter);
+app.use('/compras', comprasRoutes);
 
-// Manejo 404
+// ============================
+// 404
+// ============================
 app.use((req, res) => {
-  res.status(404);
-  res.render('404', { title: 'No encontrado' });
+  res.status(404).render('404', { title: '404 - No encontrado' });
 });
+
+// ============================
+// SERVER
+// ============================
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);

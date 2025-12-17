@@ -2,26 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title><%= typeof title !== 'undefined' ? title : 'Control Proveeduría' %></title>
+  <title><%= typeof title !== 'undefined' ? title : 'Proveeduría GT' %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- CSS -->
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
 <nav class="navbar">
   <div class="nav-container">
-    <div class="nav-brand">
-      Proveeduría GT
-    </div>
-
+    <div class="nav-brand">Proveeduría GT</div>
     <div class="nav-links">
-      <!-- LISTADO -->
       <a href="/compras">Listado</a>
-
-      <!-- REGISTRAR COMPRA (ESTA ERA LA RUTA MALA) -->
-      <a href="/compras/nueva">Registrar compra</a>
+      <a href="/compras/factura/nueva">Nueva factura</a>
     </div>
   </div>
 </nav>
