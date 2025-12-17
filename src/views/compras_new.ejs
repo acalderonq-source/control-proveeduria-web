@@ -1,55 +1,132 @@
 <%- include('partials/header') %>
 
-<h1 class="h3 mb-3">Registrar nueva compra</h1>
+<div class="container">
+  <h1>Registrar nueva compra</h1>
 
-<% if (error) { %>
-  <div class="alert alert-danger"><%= error %></div>
-<% } %>
+  <% if (error) { %>
+    <div class="alert alert-error"><%= error %></div>
+  <% } %>
 
-<form method="post" action="/compras" class="row g-3">
-  <div class="col-md-3">
-    <label class="form-label">Fecha *</label>
-    <input type="date" name="fecha" class="form-control" value="<%= form.fecha || '' %>" required>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">CEDIS *</label>
-    <input type="text" name="cedis" class="form-control" value="<%= form.cedis || '' %>" placeholder="Ej: Nicoya" required>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">Proveedor *</label>
-    <input type="text" name="proveedor" class="form-control" value="<%= form.proveedor || '' %>" required>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">Placa *</label>
-    <input type="text" name="placa" class="form-control" value="<%= form.placa || '' %>" placeholder="Ej: 173369" required>
-  </div>
+  <form action="/compras" method="POST" class="form-body">
 
-  <div class="col-md-4">
-    <label class="form-label">Producto *</label>
-    <input type="text" name="producto" class="form-control" value="<%= form.producto || '' %>" placeholder="Ej: Válvula de freno" required>
-  </div>
-  <div class="col-md-2">
-    <label class="form-label">Cantidad *</label>
-    <input type="number" step="0.01" min="0" name="cantidad" class="form-control" value="<%= form.cantidad || '' %>" required>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">Precio unitario (₡) *</label>
-    <input type="number" step="0.01" min="0" name="precio_unitario" class="form-control" value="<%= form.precio_unitario || '' %>" required>
-  </div>
-  <div class="col-md-3">
-    <label class="form-label">Solicitó *</label>
-    <input type="text" name="solicito" class="form-control" value="<%= form.solicito || '' %>" placeholder="Ej: Victoria" required>
-  </div>
+    <!-- FECHA -->
+    <div class="form-group">
+      <label>Fecha *</label>
+      <input type="date" name="fecha" required value="<%= form.fecha || '' %>">
+    </div>
 
-  <div class="col-12">
-    <label class="form-label">Observación</label>
-    <textarea name="observacion" class="form-control" rows="2"><%= form.observacion || '' %></textarea>
-  </div>
+    <!-- CEDIS -->
+    <div class="form-group">
+      <label>CEDIS *</label>
+      <input type="text" name="cedis" placeholder="Ej: Nicoya" required value="<%= form.cedis || '' %>">
+    </div>
 
-  <div class="col-12 d-flex justify-content-between mt-3">
-    <a href="/compras" class="btn btn-outline-secondary">Volver al listado</a>
-    <button type="submit" class="btn btn-success">Guardar compra</button>
-  </div>
-</form>
+    <!-- PROVEEDOR -->
+    <div class="form-group">
+      <label>Proveedor *</label>
+
+      <select id="proveedorSelect" onchange="toggleProveedor()" required>
+        <option value="">Seleccione proveedor</option>
+        <option value="Purdy">Purdy</option>
+        <option value="Maxi">Maxi</option>
+        <option value="Servi">Servi</option>
+        <option value="Daitoma">Daitoma</option>
+        <option value="Aros y Llantas Mundiales">Aros y Llantas Mundiales</option>
+        <option value="ET Baterías">ET Baterías</option>
+        <option value="Lapa Green">Lapa Green</option>
+        <option value="__otro__">Otro / Nuevo proveedor</option>
+      </select>
+
+      <!-- INPUT REAL QUE SE ENVÍA -->
+      <input
+        type="text"
+        id="proveedorInput"
+        name="proveedor"
+        placeholder="Escriba el proveedor"
+        style="display:none;"
+        value="<%= form.proveedor || '' %>"
+        required
+      >
+    </div>
+
+    <!-- PLACA -->
+    <div class="form-group">
+      <label>Placa *</label>
+      <input type="text" name="placa" placeholder="Ej: 173369" required value="<%= form.placa || '' %>">
+    </div>
+
+    <!-- PRODUCTO -->
+    <div class="form-group">
+      <label>Producto *</label>
+      <input type="text" name="producto" placeholder="Ej: Válvula de freno" required value="<%= form.producto || '' %>">
+    </div>
+
+    <!-- CANTIDAD -->
+    <div class="form-group">
+      <label>Cantidad *</label>
+      <input type="number" step="0.01" name="cantidad" required value="<%= form.cantidad || '' %>">
+    </div>
+
+    <!-- PRECIO -->
+    <div class="form-group">
+      <label>Precio unitario (₡) *</label>
+      <input type="number" step="0.01" name="precio_unitario" required value="<%= form.precio_unitario || '' %>">
+    </div>
+
+    <!-- SOLICITÓ -->
+    <div class="form-group">
+      <label>Solicitó *</label>
+      <input type="text" name="solicito" placeholder="Ej: Victoria" required value="<%= form.solicito || '' %>">
+    </div>
+
+    <!-- OBS -->
+    <div class="form-group">
+      <label>Observación</label>
+      <textarea name="observacion"><%= form.observacion || '' %></textarea>
+    </div>
+
+    <!-- BOTONES -->
+    <div class="form-actions">
+      <a href="/compras" class="btn-cancel">Volver al listado</a>
+      <button type="submit" class="btn-save">Guardar compra</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  function toggleProveedor() {
+    const select = document.getElementById('proveedorSelect');
+    const input = document.getElementById('proveedorInput');
+
+    if (select.value === '__otro__') {
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+    } else {
+      input.style.display = 'none';
+      input.value = select.value;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('proveedorInput');
+    const select = document.getElementById('proveedorSelect');
+
+    if (input.value) {
+      let found = false;
+      for (let opt of select.options) {
+        if (opt.value === input.value) {
+          select.value = opt.value;
+          found = true;
+        }
+      }
+      if (!found) {
+        select.value = '__otro__';
+        input.style.display = 'block';
+      }
+    }
+  });
+</script>
 
 <%- include('partials/footer') %>

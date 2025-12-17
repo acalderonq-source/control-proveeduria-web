@@ -3,18 +3,21 @@ const router = express.Router();
 const { getDb } = require('../db');
 const ExcelJS = require('exceljs');
 
-/* ===============================
-   FORMATO FECHA DD/MM/YYYY
-================================ */
+/* =====================================================
+   UTILIDAD: FORMATEAR FECHA DD/MM/YYYY
+===================================================== */
 function formatFecha(value) {
   if (!value) return '';
   const d = new Date(value);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
-/* ===============================
-   LISTADO GENERAL + SEMANA
-================================ */
+/* =====================================================
+   LISTADO GENERAL + FILTRO POR SEMANA
+===================================================== */
 router.get('/', (req, res) => {
   const db = getDb();
   const { placa, proveedor, cedis, desde, hasta, semana } = req.query;
@@ -24,20 +27,24 @@ router.get('/', (req, res) => {
 
   if (placa) {
     conditions.push('placa LIKE ?');
-    params.push('%' + placa + '%');
+    params.push(`%${placa}%`);
   }
+
   if (proveedor) {
     conditions.push('proveedor LIKE ?');
-    params.push('%' + proveedor + '%');
+    params.push(`%${proveedor}%`);
   }
+
   if (cedis) {
     conditions.push('cedis LIKE ?');
-    params.push('%' + cedis + '%');
+    params.push(`%${cedis}%`);
   }
+
   if (desde) {
     conditions.push('fecha >= ?');
     params.push(desde);
   }
+
   if (hasta) {
     conditions.push('fecha <= ?');
     params.push(hasta);
@@ -52,14 +59,23 @@ router.get('/', (req, res) => {
     params.push(`${year}-W${week}`);
   }
 
-  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+  const where = conditions.length
+    ? 'WHERE ' + conditions.join(' AND ')
+    : '';
 
   const sql = `
-    SELECT id, fecha,
+    SELECT id,
+           fecha,
            YEARWEEK(fecha, 1) AS semana,
-           cedis, proveedor, placa, producto,
-           cantidad, precio_unitario, precio_total,
-           solicito, observacion
+           cedis,
+           proveedor,
+           placa,
+           producto,
+           cantidad,
+           precio_unitario,
+           precio_total,
+           solicito,
+           observacion
     FROM compras
     ${where}
     ORDER BY fecha DESC, id DESC
@@ -67,8 +83,8 @@ router.get('/', (req, res) => {
 
   db.query(sql, params, (err, rows) => {
     if (err) {
-      console.error(err);
-      return res.status(500).send('Error consultando MySQL');
+      console.error('ERROR LISTADO:', err);
+      return res.status(500).send('Error consultando compras');
     }
 
     let totalSemana = 0;
@@ -88,9 +104,143 @@ router.get('/', (req, res) => {
   });
 });
 
-/* ===============================
-   DESCARGAR EXCEL POR SEMANA
-================================ */
+/* =====================================================
+   FORMULARIO NUEVA COMPRA
+===================================================== */
+router.get('/nueva', (req, res) => {
+  res.render('compras_new', {
+    title: 'Registrar compra',
+    error: null,
+    form: {},
+  });
+});
+
+/* =====================================================
+   INSERTAR NUEVA COMPRA
+===================================================== */
+router.post('/', (req, res) => {
+  const db = getDb();
+  const {
+    fecha,
+    cedis,
+    proveedor,
+    placa,
+    producto,
+    cantidad,
+    precio_unitario,
+    solicito,
+    observacion,
+  } = req.body;
+
+  if (
+    !fecha ||
+    !cedis ||
+    !proveedor ||
+    !placa ||
+    !producto ||
+    !cantidad ||
+    !precio_unitario ||
+    !solicito
+  ) {
+    return res.render('compras_new', {
+      title: 'Registrar compra',
+      error: 'Todos los campos marcados con * son obligatorios.',
+      form: req.body,
+    });
+  }
+
+  const cantidadNum = parseFloat(cantidad);
+  const precioUnitNum = parseFloat(precio_unitario);
+  const precioTotal = cantidadNum * precioUnitNum;
+
+  const fechaFinal = new Date(fecha).toISOString().slice(0, 10);
+  const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  const sql = `
+    INSERT INTO compras (
+      fecha, cedis, proveedor, placa, producto,
+      cantidad, precio_unitario, precio_total,
+      solicito, observacion, created_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const params = [
+    fechaFinal,
+    cedis.trim(),
+    proveedor.trim(),
+    placa.trim().toUpperCase(),
+    producto.trim(),
+    cantidadNum,
+    precioUnitNum,
+    precioTotal,
+    solicito.trim(),
+    observacion ? observacion.trim() : null,
+    createdAt,
+  ];
+
+  db.query(sql, params, err => {
+    if (err) {
+      console.error('ERROR INSERT:', err);
+      return res.render('compras_new', {
+        title: 'Registrar compra',
+        error: 'Error guardando la compra',
+        form: req.body,
+      });
+    }
+
+    res.redirect(`/compras/placa/${placa.trim().toUpperCase()}`);
+  });
+});
+
+/* =====================================================
+   HISTORIAL POR PLACA
+===================================================== */
+router.get('/placa/:placa', (req, res) => {
+  const db = getDb();
+  const placa = req.params.placa;
+
+  const sql = `
+    SELECT fecha,
+           cedis,
+           proveedor,
+           placa,
+           producto,
+           cantidad,
+           precio_unitario,
+           precio_total,
+           solicito,
+           observacion
+    FROM compras
+    WHERE placa = ?
+    ORDER BY fecha DESC
+  `;
+
+  db.query(sql, [placa], (err, rows) => {
+    if (err) return res.status(500).send('Error consultando placa');
+
+    let totalMonto = 0;
+    let totalCantidad = 0;
+
+    rows.forEach(r => {
+      r.fecha_formateada = formatFecha(r.fecha);
+      totalMonto += r.precio_total;
+      totalCantidad += r.cantidad;
+    });
+
+    res.render('compras_by_placa', {
+      title: `Historial ${placa}`,
+      placa,
+      compras: rows,
+      totalMonto,
+      totalCantidad,
+    });
+  });
+});
+
+/* =====================================================
+   DESCARGAR EXCEL (RESPETA FILTROS Y SEMANA)
+===================================================== */
 router.get('/excel', (req, res) => {
   const db = getDb();
   const { placa, proveedor, cedis, desde, hasta, semana } = req.query;
@@ -98,9 +248,9 @@ router.get('/excel', (req, res) => {
   let conditions = [];
   let params = [];
 
-  if (placa) { conditions.push('placa LIKE ?'); params.push('%' + placa + '%'); }
-  if (proveedor) { conditions.push('proveedor LIKE ?'); params.push('%' + proveedor + '%'); }
-  if (cedis) { conditions.push('cedis LIKE ?'); params.push('%' + cedis + '%'); }
+  if (placa) { conditions.push('placa LIKE ?'); params.push(`%${placa}%`); }
+  if (proveedor) { conditions.push('proveedor LIKE ?'); params.push(`%${proveedor}%`); }
+  if (cedis) { conditions.push('cedis LIKE ?'); params.push(`%${cedis}%`); }
   if (desde) { conditions.push('fecha >= ?'); params.push(desde); }
   if (hasta) { conditions.push('fecha <= ?'); params.push(hasta); }
 
@@ -112,7 +262,9 @@ router.get('/excel', (req, res) => {
     params.push(`${year}-W${week}`);
   }
 
-  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+  const where = conditions.length
+    ? 'WHERE ' + conditions.join(' AND ')
+    : '';
 
   const sql = `
     SELECT fecha, cedis, proveedor, placa, producto,
@@ -124,10 +276,10 @@ router.get('/excel', (req, res) => {
   `;
 
   db.query(sql, params, async (err, rows) => {
-    if (err) return res.status(500).send('Error creando Excel');
+    if (err) return res.status(500).send('Error generando Excel');
 
     const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('Compras Semana');
+    const ws = wb.addWorksheet('Compras');
 
     ws.columns = [
       { header: 'Fecha', key: 'fecha', width: 15 },
@@ -151,7 +303,7 @@ router.get('/excel', (req, res) => {
 
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="reporte_semana_${semana || 'todas'}.xlsx"`
+      `attachment; filename="reporte_compras_${semana || 'todas'}.xlsx"`
     );
     res.setHeader(
       'Content-Type',
