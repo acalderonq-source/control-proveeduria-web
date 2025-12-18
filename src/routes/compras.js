@@ -1,14 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const { getDb } = require('../db');
 const ExcelJS = require('exceljs');
 
 /**
  * ============================
- * LISTADO + CONTROL SEMANAL
+ * LISTADO + FILTROS + SEMANA
  * ============================
  */
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
+  const db = getDb();
+
   const { placa, proveedor, cedis, desde, hasta, semana } = req.query;
 
   let where = [];
@@ -65,23 +67,22 @@ router.get('/', async (req, res) => {
     ORDER BY fecha DESC, id DESC
   `;
 
-  try {
-    const [compras] = await pool.query(sql, params);
+  db.query(sql, params, (err, rows) => {
+    if (err) {
+      console.error('ERROR LISTADO:', err);
+      return res.status(500).send('Error cargando compras');
+    }
 
     let totalGeneral = 0;
-    compras.forEach(c => totalGeneral += Number(c.total || 0));
+    rows.forEach(r => totalGeneral += Number(r.total || 0));
 
     res.render('compras_list', {
       title: 'Control de compras',
-      compras,
+      compras: rows,
       totalGeneral,
       filtros: { placa, proveedor, cedis, desde, hasta, semana }
     });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error cargando compras');
-  }
+  });
 });
 
 /**
@@ -110,7 +111,9 @@ router.get('/nueva', (req, res) => {
  * GUARDAR COMPRA
  * ============================
  */
-router.post('/nueva', async (req, res) => {
+router.post('/nueva', (req, res) => {
+  const db = getDb();
+
   const {
     fecha,
     cedis,
@@ -133,33 +136,35 @@ router.post('/nueva', async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  try {
-    await pool.query(sql, [
-      fecha,
-      cedis,
-      proveedorFinal,
-      placa,
-      producto,
-      cantidad,
-      precio_unitario,
-      solicito,
-      observacion
-    ]);
+  const params = [
+    fecha,
+    cedis,
+    proveedorFinal,
+    placa,
+    producto,
+    cantidad,
+    precio_unitario,
+    solicito,
+    observacion
+  ];
+
+  db.query(sql, params, (err) => {
+    if (err) {
+      console.error('ERROR GUARDAR:', err);
+      return res.status(500).send('Error guardando compra');
+    }
 
     res.redirect('/compras');
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error guardando compra');
-  }
+  });
 });
 
 /**
  * ============================
- * DESCARGAR EXCEL
+ * EXPORTAR EXCEL
  * ============================
  */
-router.get('/excel', async (req, res) => {
+router.get('/excel', (req, res) => {
+  const db = getDb();
   const { desde, hasta } = req.query;
 
   let where = [];
@@ -193,32 +198,37 @@ router.get('/excel', async (req, res) => {
     ORDER BY fecha ASC
   `;
 
-  const [rows] = await pool.query(sql, params);
+  db.query(sql, params, async (err, rows) => {
+    if (err) {
+      console.error('ERROR EXCEL:', err);
+      return res.status(500).send('Error generando Excel');
+    }
 
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Compras');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Compras');
 
-  sheet.columns = [
-    { header: 'Fecha', key: 'fecha' },
-    { header: 'CEDIS', key: 'cedis' },
-    { header: 'Proveedor', key: 'proveedor' },
-    { header: 'Placa', key: 'placa' },
-    { header: 'Producto', key: 'producto' },
-    { header: 'Cantidad', key: 'cantidad' },
-    { header: 'Precio Unitario', key: 'precio_unitario' },
-    { header: 'Total', key: 'total' },
-    { header: 'Solicitó', key: 'solicito' }
-  ];
+    sheet.columns = [
+      { header: 'Fecha', key: 'fecha' },
+      { header: 'CEDIS', key: 'cedis' },
+      { header: 'Proveedor', key: 'proveedor' },
+      { header: 'Placa', key: 'placa' },
+      { header: 'Producto', key: 'producto' },
+      { header: 'Cantidad', key: 'cantidad' },
+      { header: 'Precio Unitario', key: 'precio_unitario' },
+      { header: 'Total', key: 'total' },
+      { header: 'Solicitó', key: 'solicito' }
+    ];
 
-  rows.forEach(r => sheet.addRow(r));
+    rows.forEach(r => sheet.addRow(r));
 
-  res.setHeader(
-    'Content-Disposition',
-    'attachment; filename=compras.xlsx'
-  );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=compras.xlsx'
+    );
 
-  await workbook.xlsx.write(res);
-  res.end();
+    await workbook.xlsx.write(res);
+    res.end();
+  });
 });
 
 module.exports = router;
