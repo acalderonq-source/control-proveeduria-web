@@ -1,25 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { getDb } = require('../db');
+const pool = require('../db');
+const ExcelJS = require('exceljs');
 
 /**
- * Formatea fecha YYYY-MM-DD → DD/MM/YYYY
+ * ============================
+ * LISTADO + CONTROL SEMANAL
+ * ============================
  */
-function formatFecha(value) {
-  if (!value) return '';
-  const d = new Date(value);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-// =====================================================
-// LISTADO GENERAL DE COMPRAS
-// =====================================================
-router.get('/', (req, res) => {
-  const db = getDb();
-  const { placa, proveedor, cedis } = req.query;
+router.get('/', async (req, res) => {
+  const { placa, proveedor, cedis, desde, hasta, semana } = req.query;
 
   let where = [];
   let params = [];
@@ -28,74 +18,104 @@ router.get('/', (req, res) => {
     where.push('placa LIKE ?');
     params.push(`%${placa}%`);
   }
+
   if (proveedor) {
     where.push('proveedor LIKE ?');
     params.push(`%${proveedor}%`);
   }
+
   if (cedis) {
     where.push('cedis LIKE ?');
     params.push(`%${cedis}%`);
   }
 
-  const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  if (desde) {
+    where.push('fecha >= ?');
+    params.push(desde);
+  }
+
+  if (hasta) {
+    where.push('fecha <= ?');
+    params.push(hasta);
+  }
+
+  if (semana) {
+    where.push('YEARWEEK(fecha, 1) = ?');
+    params.push(semana);
+  }
+
+  const whereSQL = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const sql = `
     SELECT
       id,
       fecha,
+      YEARWEEK(fecha, 1) AS semana,
       cedis,
       proveedor,
       placa,
       producto,
       cantidad,
       precio_unitario,
-      precio_total,
+      (cantidad * precio_unitario) AS total,
       solicito,
       observacion
     FROM compras
-    ${whereClause}
+    ${whereSQL}
     ORDER BY fecha DESC, id DESC
   `;
 
-  db.query(sql, params, (err, rows) => {
-    if (err) {
-      console.error('ERROR LISTADO:', err);
-      return res.status(500).send('Error consultando compras');
-    }
+  try {
+    const [compras] = await pool.query(sql, params);
 
-    rows.forEach(r => {
-      r.fecha_formateada = formatFecha(r.fecha);
-    });
+    let totalGeneral = 0;
+    compras.forEach(c => totalGeneral += Number(c.total || 0));
 
     res.render('compras_list', {
-      title: 'Compras',
-      compras: rows,
-      filtros: { placa, proveedor, cedis }
+      title: 'Control de compras',
+      compras,
+      totalGeneral,
+      filtros: { placa, proveedor, cedis, desde, hasta, semana }
     });
-  });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error cargando compras');
+  }
 });
 
-// =====================================================
-// FORMULARIO NUEVA COMPRA
-// =====================================================
+/**
+ * ============================
+ * FORM NUEVA COMPRA
+ * ============================
+ */
 router.get('/nueva', (req, res) => {
   res.render('compras_new', {
     title: 'Registrar compra',
-    error: null,
-    form: {}
+    proveedores: [
+      'PURDY',
+      'MAXI',
+      'SERVI',
+      'DAITOMA',
+      'AROS Y LLANTAS MUNDIALES',
+      'ET BATERIAS',
+      'LAPA GREEN',
+      'OTRO'
+    ]
   });
 });
 
-// =====================================================
-// INSERTAR NUEVA COMPRA
-// =====================================================
-router.post('/', (req, res) => {
-  const db = getDb();
-
+/**
+ * ============================
+ * GUARDAR COMPRA
+ * ============================
+ */
+router.post('/nueva', async (req, res) => {
   const {
     fecha,
     cedis,
     proveedor,
+    proveedor_otro,
     placa,
     producto,
     cantidad,
@@ -104,71 +124,61 @@ router.post('/', (req, res) => {
     observacion
   } = req.body;
 
-  if (!fecha || !cedis || !proveedor || !placa || !producto || !cantidad || !precio_unitario || !solicito) {
-    return res.render('compras_new', {
-      title: 'Registrar compra',
-      error: 'Todos los campos marcados con * son obligatorios',
-      form: req.body
-    });
-  }
-
-  const cantidadNum = parseFloat(cantidad);
-  const precioUnitNum = parseFloat(precio_unitario);
-  const precioTotal = cantidadNum * precioUnitNum;
+  const proveedorFinal =
+    proveedor === 'OTRO' ? proveedor_otro : proveedor;
 
   const sql = `
-    INSERT INTO compras (
+    INSERT INTO compras
+    (fecha, cedis, proveedor, placa, producto, cantidad, precio_unitario, solicito, observacion)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  try {
+    await pool.query(sql, [
       fecha,
       cedis,
-      proveedor,
+      proveedorFinal,
       placa,
       producto,
       cantidad,
       precio_unitario,
-      precio_total,
       solicito,
       observacion
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const params = [
-    fecha,
-    cedis.trim(),
-    proveedor.trim(),
-    placa.trim().toUpperCase(),
-    producto.trim(),
-    cantidadNum,
-    precioUnitNum,
-    precioTotal,
-    solicito.trim(),
-    observacion ? observacion.trim() : null
-  ];
-
-  db.query(sql, params, (err) => {
-    if (err) {
-      console.error('ERROR INSERT:', err);
-      return res.render('compras_new', {
-        title: 'Registrar compra',
-        error: 'Error guardando la compra',
-        form: req.body
-      });
-    }
+    ]);
 
     res.redirect('/compras');
-  });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error guardando compra');
+  }
 });
 
-// =====================================================
-// HISTORIAL POR PLACA
-// =====================================================
-router.get('/placa/:placa', (req, res) => {
-  const db = getDb();
-  const placa = req.params.placa;
+/**
+ * ============================
+ * DESCARGAR EXCEL
+ * ============================
+ */
+router.get('/excel', async (req, res) => {
+  const { desde, hasta } = req.query;
+
+  let where = [];
+  let params = [];
+
+  if (desde) {
+    where.push('fecha >= ?');
+    params.push(desde);
+  }
+
+  if (hasta) {
+    where.push('fecha <= ?');
+    params.push(hasta);
+  }
+
+  const whereSQL = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
   const sql = `
     SELECT
-      id,
       fecha,
       cedis,
       proveedor,
@@ -176,44 +186,39 @@ router.get('/placa/:placa', (req, res) => {
       producto,
       cantidad,
       precio_unitario,
-      precio_total,
-      solicito,
-      observacion
+      (cantidad * precio_unitario) AS total,
+      solicito
     FROM compras
-    WHERE placa = ?
-    ORDER BY fecha DESC, id DESC
+    ${whereSQL}
+    ORDER BY fecha ASC
   `;
 
-  db.query(sql, [placa], (err, rows) => {
-    if (err) {
-      console.error('ERROR POR PLACA:', err);
-      return res.status(500).send('Error consultando historial');
-    }
+  const [rows] = await pool.query(sql, params);
 
-    let totalMonto = 0;
-    let totalCantidad = 0;
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Compras');
 
-    rows.forEach(r => {
-      totalMonto += r.precio_total;
-      totalCantidad += r.cantidad;
-      r.fecha_formateada = formatFecha(r.fecha);
-    });
+  sheet.columns = [
+    { header: 'Fecha', key: 'fecha' },
+    { header: 'CEDIS', key: 'cedis' },
+    { header: 'Proveedor', key: 'proveedor' },
+    { header: 'Placa', key: 'placa' },
+    { header: 'Producto', key: 'producto' },
+    { header: 'Cantidad', key: 'cantidad' },
+    { header: 'Precio Unitario', key: 'precio_unitario' },
+    { header: 'Total', key: 'total' },
+    { header: 'Solicitó', key: 'solicito' }
+  ];
 
-    res.render('compras_by_placa', {
-      title: `Historial ${placa}`,
-      placa,
-      compras: rows,
-      totalMonto,
-      totalCantidad
-    });
-  });
-});
+  rows.forEach(r => sheet.addRow(r));
 
-// =====================================================
-// RUTA FACTURAS (DESHABILITADA POR AHORA)
-// =====================================================
-router.get('/factura/:id/items', (req, res) => {
-  return res.status(501).send('Función de facturas no habilitada todavía');
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename=compras.xlsx'
+  );
+
+  await workbook.xlsx.write(res);
+  res.end();
 });
 
 module.exports = router;
