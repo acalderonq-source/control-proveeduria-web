@@ -1,9 +1,9 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { title }) %>
 
-<div class="container">
-  <h1>404</h1>
-  <p class="muted">La página que buscás no existe: <span class="mono"><%= path %></span></p>
-  <a class="btn btn-primary" href="/compras">Ir al listado</a>
+<div class="card center">
+  <h1 class="big">404</h1>
+  <p class="muted">La página que buscás no existe.</p>
+  <a class="btn primary" href="/compras">Ir al inicio</a>
 </div>
 
 <%- include('partials/footer') %>

@@ -2,18 +2,66 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title><%= typeof title !== 'undefined' ? title : 'Proveeduría GT' %></title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/css/styles.css">
+
+  <!-- TÍTULO SEGURO (NO FALLA SI NO EXISTE title) -->
+  <title>
+    <%= typeof title !== 'undefined' && title 
+        ? title 
+        : 'Control de Proveeduría' %>
+  </title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- BOOTSTRAP -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- ICONOS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+
+  <!-- ESTILOS PROPIOS -->
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body>
 
-<nav class="navbar">
-  <div class="nav-container">
-    <div class="nav-brand">Proveeduría GT</div>
-    <div class="nav-links">
-      <a href="/compras">Listado</a>
-      <a href="/compras/factura/nueva">Nueva factura</a>
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="/compras">
+      🧾 Control Proveeduría
+    </a>
+
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarMain"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarMain">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="/compras">
+            <i class="bi bi-list-ul"></i> Compras
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="/compras/nueva">
+            <i class="bi bi-plus-circle"></i> Nueva compra
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </nav>
+
+<!-- CONTENEDOR GENERAL -->
+<main class="container my-4">

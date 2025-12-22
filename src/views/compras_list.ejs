@@ -1,80 +1,74 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { title: 'Control de Compras' }) %>
+
+<%
+  const totalSeguro =
+    typeof totalGeneral !== 'undefined'
+      ? totalGeneral
+      : 0;
+%>
 
 <div class="container">
+
   <div class="page-head">
-    <div>
-      <h1>Control semanal de compras</h1>
-      <p class="muted">Filtrá por semana, fechas, placa, proveedor o CEDIS.</p>
-    </div>
-    <div class="page-actions">
-      <a class="btn btn-primary" href="/compras/factura/nueva">+ Nueva factura</a>
-    </div>
+    <h1>📦 Control de Compras</h1>
+    <a href="/compras/nueva" class="btn btn-primary">➕ Nueva compra</a>
   </div>
 
-  <div class="card">
-    <form method="GET" action="/compras" class="filters">
-      <input name="semana" placeholder="Semana (YYYY-Www) ej: 2025-W50" value="<%= filtros.semana || '' %>">
-      <input name="placa" placeholder="Placa" value="<%= filtros.placa || '' %>">
-      <input name="proveedor" placeholder="Proveedor" value="<%= filtros.proveedor || '' %>">
-      <input name="cedis" placeholder="CEDIS" value="<%= filtros.cedis || '' %>">
-      <input type="date" name="desde" value="<%= filtros.desde || '' %>">
-      <input type="date" name="hasta" value="<%= filtros.hasta || '' %>">
-      <button class="btn btn-secondary" type="submit">Filtrar</button>
-    </form>
-  </div>
-
-  <div class="kpi-row">
-    <div class="kpi">
-      <div class="kpi-label">Registros</div>
-      <div class="kpi-value"><%= compras.length %></div>
-    </div>
+  <!-- KPIs -->
+  <div class="kpi-grid">
     <div class="kpi">
       <div class="kpi-label">Total (según filtros)</div>
-      <div class="kpi-value">₡ <%= Number(totalGeneral || 0).toFixed(2) %>
-</div>
+      <div class="kpi-value">₡ <%= Number(totalSeguro).toFixed(2) %></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Semana</th>
-            <th>Fecha</th>
-            <th>CEDIS</th>
-            <th>Proveedor</th>
-            <th>Factura</th>
-            <th>Placa</th>
-            <th>Producto</th>
-            <th>Cant</th>
-            <th>Total</th>
-            <th>Solicitó</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% compras.forEach(c => { %>
-            <tr>
-              <td><span class="pill"><%= c.semana_label %></span></td>
-              <td><%= c.fecha_formateada %></td>
-              <td><%= c.cedis %></td>
-              <td><%= c.proveedor %></td>
-              <td>
-                <a href="/compras/factura/<%= c.factura_id %>"><%= c.factura_numero %></a>
-              </td>
-              <td>
-                <a href="/compras/placa/<%= c.placa %>" class="mono"><%= c.placa %></a>
-              </td>
-              <td><%= c.producto %></td>
-              <td><%= c.cantidad %></td>
-              <td><strong>₡ <%= Number(c.precio_total).toFixed(2) %></strong></td>
-              <td><%= c.solicito %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <!-- FILTROS -->
+  <form method="GET" class="filters">
+    <input type="text" name="placa" placeholder="Placa" value="<%= filtros.placa %>">
+    <input type="text" name="proveedor" placeholder="Proveedor" value="<%= filtros.proveedor %>">
+    <input type="text" name="cedis" placeholder="CEDIS" value="<%= filtros.cedis %>">
+    <button class="btn">Filtrar</button>
+    <a href="/compras" class="btn btn-light">Limpiar</a>
+  </form>
+
+  <!-- TABLA -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>CEDIS</th>
+        <th>Proveedor</th>
+        <th>Placa</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>₡ Unit</th>
+        <th>₡ Total</th>
+        <th>Solicitó</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (compras.length === 0) { %>
+        <tr>
+          <td colspan="9" class="muted center">No hay registros</td>
+        </tr>
+      <% } %>
+
+      <% compras.forEach(c => { %>
+        <tr>
+          <td><%= new Date(c.fecha).toLocaleDateString('es-CR') %></td>
+          <td><%= c.cedis %></td>
+          <td><%= c.proveedor %></td>
+          <td><%= c.placa %></td>
+          <td><%= c.producto %></td>
+          <td class="right"><%= c.cantidad %></td>
+          <td class="right">₡ <%= Number(c.precio_unitario).toFixed(2) %></td>
+          <td class="right bold">₡ <%= Number(c.precio_total).toFixed(2) %></td>
+          <td><%= c.solicito %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
 </div>
 
 <%- include('partials/footer') %>

@@ -1,63 +1,64 @@
 <%- include('partials/header') %>
 
-<div class="container">
-  <div class="page-head">
-    <div>
-      <h1>Factura <span class="mono"><%= factura.numero %></span></h1>
-      <div class="subline">
-        <span class="pill"><strong>Proveedor:</strong> <%= factura.proveedor %></span>
-        <span class="pill"><strong>CEDIS:</strong> <%= factura.cedis %></span>
-        <span class="pill"><strong>Fecha:</strong> <%= factura.fecha_formateada %></span>
-      </div>
-    </div>
+<div class="container factura">
 
-    <div class="page-actions">
-      <a class="btn btn-secondary" href="/compras/factura/<%= factura.id %>/items">Seguir agregando</a>
-      <a class="btn btn-success" href="/compras/factura/<%= factura.id %>/excel">Descargar Excel</a>
-    </div>
+  <h2>Factura</h2>
+
+  <% if (error) { %>
+    <div class="alert danger"><%= error %></div>
+  <% } %>
+
+  <!-- DATOS FACTURA -->
+  <div class="factura-info">
+    <div><strong>Fecha:</strong> <%= factura.fecha.toISOString().split('T')[0] %></div>
+    <div><strong>Proveedor:</strong> <%= factura.proveedor %></div>
+    <div><strong>CEDIS:</strong> <%= factura.cedis %></div>
+    <div><strong>N° Factura:</strong> <%= factura.numero || '—' %></div>
   </div>
 
-  <div class="kpi-row">
-    <div class="kpi">
-      <div class="kpi-label">Ítems</div>
-      <div class="kpi-value"><%= items.length %></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Total</div>
-      <div class="kpi-value">₡ <%= Number(total).toFixed(2) %></div>
-    </div>
+  <!-- TABLA ITEMS -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Placa</th>
+        <th>Producto</th>
+        <th>Cant</th>
+        <th>P. Unitario</th>
+        <th>Total</th>
+        <th>Solicitó</th>
+        <th>Obs.</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (items.length === 0) { %>
+        <tr>
+          <td colspan="7" style="text-align:center;">Sin items</td>
+        </tr>
+      <% } %>
+
+      <% items.forEach(i => { %>
+        <tr>
+          <td><%= i.placa %></td>
+          <td><%= i.producto %></td>
+          <td><%= i.cantidad %></td>
+          <td>₡ <%= Number(i.precio_unitario).toFixed(2) %></td>
+          <td>₡ <%= Number(i.precio_total).toFixed(2) %></td>
+          <td><%= i.solicito %></td>
+          <td><%= i.observacion || '' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <!-- TOTAL -->
+  <div class="factura-total">
+    <strong>Total:</strong>
+    <span>₡ <%= Number(total).toFixed(2) %></span>
   </div>
 
-  <div class="card">
-    <h2 class="card-title">Detalle</h2>
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Placa</th>
-            <th>Producto</th>
-            <th>Cant</th>
-            <th>P.Unit</th>
-            <th>Total</th>
-            <th>Solicitó</th>
-            <th>Obs</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% items.forEach(i => { %>
-            <tr>
-              <td class="mono"><%= i.placa %></td>
-              <td><%= i.producto %></td>
-              <td><%= i.cantidad %></td>
-              <td>₡ <%= Number(i.precio_unitario).toFixed(2) %></td>
-              <td><strong>₡ <%= Number(i.precio_total).toFixed(2) %></strong></td>
-              <td><%= i.solicito %></td>
-              <td><%= i.observacion || '' %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+  <!-- ACCIONES -->
+  <div class="form-actions">
+    <a href="/compras" class="btn-cancel">Volver</a>
   </div>
 
 </div>
