@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ===================
 app.use('/compras', comprasRoutes);
 app.use('/compras/factura', facturasRoutes);
-
+app.use('/compras', facturasRoutes);
 // ===================
 // HOME
 // ===================
