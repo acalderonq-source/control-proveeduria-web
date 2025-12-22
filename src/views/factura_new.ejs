@@ -1,73 +1,18 @@
-<%- include('partials/header', { title: 'Nueva factura' }) %>
+<%- include('partials/header', { title }) %>
 
 <div class="container">
-  <div class="page-head">
-    <h1>Nueva factura</h1>
-    <p class="muted">Registro del encabezado de la factura</p>
-  </div>
+  <h2>Nueva factura</h2>
 
-  <% if (error) { %>
-    <div class="alert danger"><%= error %></div>
-  <% } %>
+  <form>
+    <label>Proveedor</label><br>
+    <input type="text"><br><br>
 
-  <form method="POST" action="/compras/factura/nueva" class="card form-grid">
+    <label>Fecha</label><br>
+    <input type="date"><br><br>
 
-    <div class="form-group">
-      <label>Fecha *</label>
-      <input type="date" name="fecha" required>
-    </div>
-
-    <div class="form-group">
-      <label>Proveedor *</label>
-      <select name="proveedor" id="proveedor" required onchange="toggleProveedor()">
-        <option value="">Seleccione…</option>
-        <option>PURDY</option>
-        <option>MAXI</option>
-        <option>SERVI</option>
-        <option>DAITOMA</option>
-        <option>AROS Y LLANTAS MUNDIALES</option>
-        <option>ET BATERIAS</option>
-        <option>LAPA GREEN</option>
-        <option value="OTRO">Otro</option>
-      </select>
-    </div>
-
-    <div class="form-group hidden" id="proveedorOtro">
-      <label>Proveedor (otro)</label>
-      <input type="text" name="proveedor_otro" placeholder="Nombre del proveedor">
-    </div>
-
-    <div class="form-group">
-      <label>CEDIS *</label>
-      <select name="cedis" required>
-        <option value="">Seleccione…</option>
-        <option>Cartago</option>
-        <option>Alajuela</option>
-        <option>La Cruz</option>
-        <option>Nicoya</option>
-        <option>Limón</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label>Número de factura *</label>
-      <input type="text" name="numero" required>
-    </div>
-
-    <div class="form-actions">
-      <a href="/compras" class="btn btn-secondary">Cancelar</a>
-      <button class="btn btn-primary">Crear factura</button>
-    </div>
-
+    <button>Guardar factura</button>
   </form>
 </div>
 
-<script>
-function toggleProveedor() {
-  const sel = document.getElementById('proveedor');
-  document.getElementById('proveedorOtro')
-    .classList.toggle('hidden', sel.value !== 'OTRO');
-}
-</script>
-
-<%- include('partials/footer') %>
+</body>
+</html>

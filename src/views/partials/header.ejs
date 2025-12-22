@@ -1,67 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= title || 'Control Proveeduría' %></title>
 
-  <!-- TÍTULO SEGURO (NO FALLA SI NO EXISTE title) -->
-  <title>
-    <%= typeof title !== 'undefined' && title 
-        ? title 
-        : 'Control de Proveeduría' %>
-  </title>
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- BOOTSTRAP -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-
-  <!-- ICONOS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
-    rel="stylesheet"
-  />
-
-  <!-- ESTILOS PROPIOS -->
-  <link rel="stylesheet" href="/css/styles.css" />
+  <!-- CSS propio -->
+  <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
+  <nav class="navbar navbar-expand-lg navbar-dark nav-pro">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="/compras">Proveeduría GT</a>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-  <div class="container-fluid">
-    <a class="navbar-brand fw-bold" href="/compras">
-      🧾 Control Proveeduría
-    </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#navbarMain"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="navbarMain">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">
-          <a class="nav-link" href="/compras">
-            <i class="bi bi-list-ul"></i> Compras
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" href="/compras/nueva">
-            <i class="bi bi-plus-circle"></i> Nueva compra
-          </a>
-        </li>
-      </ul>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav ms-auto gap-2">
+          <li class="nav-item"><a class="nav-link" href="/compras">Listado</a></li>
+          <li class="nav-item"><a class="nav-link" href="/compras/nueva">Registrar compra</a></li>
+        </ul>
+      </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-<!-- CONTENEDOR GENERAL -->
-<main class="container my-4">
+  <main class="page-wrap">

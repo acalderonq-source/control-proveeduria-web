@@ -1,48 +1,128 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { title: title || 'Nueva compra' }) %>
 
-<div class="container">
-  <h1>Nueva factura</h1>
+<div class="container py-4" style="max-width: 980px;">
 
-  <form method="POST" action="/compras/factura">
-    <div class="form-grid">
-
-      <label>
-        Número de factura
-        <input type="text" name="numero" required>
-      </label>
-
-      <label>
-        Fecha
-        <input type="date" name="fecha" required>
-      </label>
-
-      <label>
-        Proveedor
-        <select name="proveedor" required>
-          <option value="">Seleccione</option>
-          <option>PURDY</option>
-          <option>MAXI</option>
-          <option>SERVI</option>
-          <option>DAITOMA</option>
-          <option>AROS Y LLANTAS MUNDIALES</option>
-          <option>ET BATERIAS</option>
-          <option>LAPA GREEN</option>
-          <option value="OTRO">Otro…</option>
-        </select>
-      </label>
-
-      <label>
-        CEDIS
-        <input type="text" name="cedis" required>
-      </label>
-
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Registrar nueva compra</h1>
+      <div class="text-muted small">Proveedor por lista, y “Otro…” para agregar uno nuevo.</div>
     </div>
+    <a class="btn btn-outline-secondary" href="/compras">Volver</a>
+  </div>
 
-    <div class="form-actions">
-      <a href="/compras" class="btn btn-secondary">Cancelar</a>
-      <button class="btn btn-primary">Continuar</button>
+  <% if (errorUI && errorUI.length) { %>
+    <div class="alert alert-danger shadow-sm"><%= errorUI %></div>
+  <% } %>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <form method="POST" action="/compras/nueva" class="row g-3">
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Fecha *</label>
+          <input type="date" name="fecha" class="form-control" required>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">CEDIS *</label>
+          <input name="cedis" class="form-control" placeholder="Ej: Cartago" required>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Proveedor *</label>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <select class="form-select" id="proveedorSelect">
+                <option value="Purdy">Purdy</option>
+                <option value="Maxi">Maxi</option>
+                <option value="Servi">Servi</option>
+                <option value="Daitoma">Daitoma</option>
+                <option value="Aros y Llantas Mundiales">Aros y Llantas Mundiales</option>
+                <option value="ET Baterías">ET Baterías</option>
+                <option value="Lapa Green">Lapa Green</option>
+                <option value="__OTRO__">Otro…</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <input class="form-control d-none" id="proveedorOtro" placeholder="Escribí el proveedor nuevo">
+              <input type="hidden" name="proveedor" id="proveedorFinal" required>
+            </div>
+          </div>
+
+          <div class="text-muted small mt-1">
+            Si elegís “Otro…”, se habilita el campo para escribirlo.
+          </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Placa *</label>
+          <input name="placa" class="form-control" placeholder="Ej: C173369" required>
+        </div>
+
+        <div class="col-12 col-md-9">
+          <label class="form-label">Producto *</label>
+          <input name="producto" class="form-control" placeholder="Ej: Filtro de aceite" required>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Cantidad *</label>
+          <input type="number" step="0.01" name="cantidad" class="form-control" value="1" required>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Precio unitario (₡) *</label>
+          <input type="number" step="0.01" name="precio_unitario" class="form-control" required>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label">Solicitó</label>
+          <input name="solicito" class="form-control" placeholder="Ej: Victoria / Daniel">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Observación</label>
+          <textarea name="observacion" class="form-control" rows="3" placeholder="Notas…"></textarea>
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <a class="btn btn-outline-secondary" href="/compras">Cancelar</a>
+          <button class="btn btn-primary px-4" type="submit">Guardar compra</button>
+        </div>
+
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 
-<%- include('partials/footer') %>
+<script>
+  const sel = document.getElementById('proveedorSelect');
+  const otro = document.getElementById('proveedorOtro');
+  const final = document.getElementById('proveedorFinal');
+
+  function setProveedor() {
+    if (sel.value === '__OTRO__') {
+      otro.classList.remove('d-none');
+      otro.required = true;
+      final.value = (otro.value || '').trim();
+      otro.focus();
+    } else {
+      otro.classList.add('d-none');
+      otro.required = false;
+      otro.value = '';
+      final.value = sel.value;
+    }
+  }
+
+  sel.addEventListener('change', setProveedor);
+  otro.addEventListener('input', () => final.value = (otro.value || '').trim());
+
+  // init
+  setProveedor();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</main>
+</body>
+</html>

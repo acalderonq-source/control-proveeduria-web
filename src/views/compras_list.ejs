@@ -1,74 +1,147 @@
-<%- include('partials/header', { title: 'Control de Compras' }) %>
+<%- include('partials/header', { title: title || 'Compras' }) %>
 
-<%
-  const totalSeguro =
-    typeof totalGeneral !== 'undefined'
-      ? totalGeneral
-      : 0;
-%>
+<div class="container py-4">
 
-<div class="container">
+  <% if (errorUI && errorUI.length) { %>
+    <div class="alert alert-danger shadow-sm"><%= errorUI %></div>
+  <% } %>
 
-  <div class="page-head">
-    <h1>📦 Control de Compras</h1>
-    <a href="/compras/nueva" class="btn btn-primary">➕ Nueva compra</a>
-  </div>
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+    <div>
+      <h1 class="h3 mb-1 text-dark">Compras registradas</h1>
+      <div class="text-muted small">Filtrá por semana o por rango de fechas y descargá en Excel.</div>
+    </div>
 
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi">
+    <div class="kpi-card">
       <div class="kpi-label">Total (según filtros)</div>
-      <div class="kpi-value">₡ <%= Number(totalSeguro).toFixed(2) %></div>
+      <div class="kpi-value">₡ <%= Number(totalGeneral || 0).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></div>
     </div>
   </div>
 
-  <!-- FILTROS -->
-  <form method="GET" class="filters">
-    <input type="text" name="placa" placeholder="Placa" value="<%= filtros.placa %>">
-    <input type="text" name="proveedor" placeholder="Proveedor" value="<%= filtros.proveedor %>">
-    <input type="text" name="cedis" placeholder="CEDIS" value="<%= filtros.cedis %>">
-    <button class="btn">Filtrar</button>
-    <a href="/compras" class="btn btn-light">Limpiar</a>
-  </form>
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <form class="row g-2 align-items-end" method="GET" action="/compras">
 
-  <!-- TABLA -->
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>CEDIS</th>
-        <th>Proveedor</th>
-        <th>Placa</th>
-        <th>Producto</th>
-        <th>Cantidad</th>
-        <th>₡ Unit</th>
-        <th>₡ Total</th>
-        <th>Solicitó</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if (compras.length === 0) { %>
-        <tr>
-          <td colspan="9" class="muted center">No hay registros</td>
-        </tr>
-      <% } %>
+        <div class="col-12 col-md-3">
+          <label class="form-label">Semana</label>
+          <select class="form-select" name="semana" id="semana">
+            <option value="">(Sin semana: usa fechas)</option>
+            <% (semanas || []).forEach(s => { %>
+              <option value="<%= s.value %>" <%= (selectedSemana === s.value ? 'selected' : '') %>><%= s.label %></option>
+            <% }) %>
+          </select>
+        </div>
 
-      <% compras.forEach(c => { %>
-        <tr>
-          <td><%= new Date(c.fecha).toLocaleDateString('es-CR') %></td>
-          <td><%= c.cedis %></td>
-          <td><%= c.proveedor %></td>
-          <td><%= c.placa %></td>
-          <td><%= c.producto %></td>
-          <td class="right"><%= c.cantidad %></td>
-          <td class="right">₡ <%= Number(c.precio_unitario).toFixed(2) %></td>
-          <td class="right bold">₡ <%= Number(c.precio_total).toFixed(2) %></td>
-          <td><%= c.solicito %></td>
-        </tr>
-      <% }) %>
-    </tbody>
-  </table>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Desde</label>
+          <input class="form-control" type="date" name="desde" id="desde" value="<%= filtros?.desde || '' %>">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label">Hasta</label>
+          <input class="form-control" type="date" name="hasta" id="hasta" value="<%= filtros?.hasta || '' %>">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label">Placa</label>
+          <input class="form-control" name="placa" value="<%= filtros?.placa || '' %>" placeholder="Ej: C173369">
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label">CEDIS</label>
+          <input class="form-control" name="cedis" value="<%= filtros?.cedis || '' %>" placeholder="Ej: Cartago">
+        </div>
+
+        <div class="col-12 col-md-3">
+          <label class="form-label">Proveedor</label>
+          <input class="form-control" name="proveedor" value="<%= filtros?.proveedor || '' %>" placeholder="Ej: Maxi">
+        </div>
+
+        <div class="col-12 col-md-9 d-flex gap-2 justify-content-end">
+          <button class="btn btn-primary px-4" type="submit">Filtrar</button>
+
+          <a class="btn btn-success px-4"
+             href="/compras/export/excel?<%= new URLSearchParams(filtros || {}).toString() %>">
+            Descargar Excel
+          </a>
+        </div>
+
+      </form>
+
+      <div class="text-muted small mt-2">
+        * Si elegís semana, el sistema ignora “desde/hasta”.
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-head">
+          <tr>
+            <th>Fecha</th>
+            <th>CEDIS</th>
+            <th>Proveedor</th>
+            <th>Placa</th>
+            <th>Producto</th>
+            <th class="text-end">Cant</th>
+            <th class="text-end">P. Unit</th>
+            <th class="text-end">Total</th>
+            <th>Solicitó</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% if (!compras || !compras.length) { %>
+            <tr>
+              <td colspan="10" class="text-center py-5 text-muted">
+                No hay compras con esos filtros.
+              </td>
+            </tr>
+          <% } %>
+
+          <% (compras || []).forEach(c => { %>
+            <tr>
+              <td class="text-nowrap"><%= c.fecha_fmt %></td>
+              <td><span class="badge badge-soft"><%= c.cedis %></span></td>
+              <td class="fw-semibold"><%= c.proveedor %></td>
+              <td class="mono"><%= c.placa %></td>
+              <td><%= c.producto %></td>
+              <td class="text-end"><%= Number(c.cantidad || 0).toFixed(2) %></td>
+              <td class="text-end">₡ <%= Number(c.precio_unitario || 0).toLocaleString('es-CR', { minimumFractionDigits: 2 }) %></td>
+              <td class="text-end fw-semibold">₡ <%= Number(c.total || 0).toLocaleString('es-CR', { minimumFractionDigits: 2 }) %></td>
+              <td><%= c.solicito || '' %></td>
+              <td class="text-muted small"><%= c.observacion || '' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+
+      </table>
+    </div>
+  </div>
 
 </div>
 
-<%- include('partials/footer') %>
+<script>
+  // Si elijo semana => bloqueo fechas para que no confunda
+  const semana = document.getElementById('semana');
+  const desde = document.getElementById('desde');
+  const hasta = document.getElementById('hasta');
+
+  function sync() {
+    const hasWeek = !!semana.value;
+    desde.disabled = hasWeek;
+    hasta.disabled = hasWeek;
+    desde.classList.toggle('disabled-field', hasWeek);
+    hasta.classList.toggle('disabled-field', hasWeek);
+  }
+  semana.addEventListener('change', sync);
+  sync();
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</main>
+</body>
+</html>

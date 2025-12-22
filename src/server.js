@@ -2,47 +2,34 @@ const express = require('express');
 const path = require('path');
 
 const comprasRoutes = require('./routes/compras');
-const facturasRoutes = require('./routes/facturas');
 
 const app = express();
 
-// ===================
-// CONFIG
-// ===================
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
 
-// ===================
-// ROUTES
-// ===================
 app.use('/compras', comprasRoutes);
-app.use('/compras/factura', facturasRoutes);
-app.use('/compras', facturasRoutes);
-app.use('/compras/nueva', facturasRoutes);
-// ===================
-// HOME
-// ===================
-app.get('/', (req, res) => {
-  res.redirect('/compras');
-});
 
-// ===================
-// 404
-// ===================
+// Home redirect
+app.get('/', (req, res) => res.redirect('/compras'));
+
+// 404 bonito
 app.use((req, res) => {
-  res.status(404).render('404', {
-    path: req.originalUrl
+  res.status(404).render('compras_list', {
+    title: '404',
+    filtros: {},
+    semanas: [],
+    selectedSemana: '',
+    compras: [],
+    totalGeneral: 0,
+    errorUI: `La página no existe: ${req.originalUrl}`
   });
 });
 
-// ===================
-// SERVER
-// ===================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
-});
+app.listen(PORT, () => console.log(`Servidor escuchando en http://localhost:${PORT}`));
