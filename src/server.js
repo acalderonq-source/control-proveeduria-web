@@ -1,35 +1,61 @@
+// ===============================
+// server.js
+// ===============================
+
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 
-const comprasRoutes = require('./routes/compras');
-
 const app = express();
 
+// ===============================
+// CONFIGURACIÓN BÁSICA
+// ===============================
+
+const PORT = process.env.PORT || 3000;
+
+// Body parser
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.set('view engine', 'ejs');
+// Archivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
+
+// View engine
 app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 
-app.use('/css', express.static(path.join(__dirname, 'public', 'css')));
+// ===============================
+// RUTAS
+// ===============================
 
+// Importar rutas (ASEGURATE que existan los archivos)
+const comprasRoutes = require('./routes/compras');
+const facturasRoutes = require('./routes/facturas');
+
+// Rutas principales
 app.use('/compras', comprasRoutes);
+app.use('/compras/factura', facturasRoutes);
 
-// Home redirect
-app.get('/', (req, res) => res.redirect('/compras'));
+// Home → redirige al listado
+app.get('/', (req, res) => {
+  res.redirect('/compras');
+});
 
-// 404 bonito
+// ===============================
+// 404 – ÚLTIMA RUTA
+// ===============================
 app.use((req, res) => {
-  res.status(404).render('compras_list', {
-    title: '404',
-    filtros: {},
-    semanas: [],
-    selectedSemana: '',
-    compras: [],
-    totalGeneral: 0,
-    errorUI: `La página no existe: ${req.originalUrl}`
+  res.status(404).render('404', {
+    title: 'Página no encontrada',
+    path: req.originalUrl
   });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor escuchando en http://localhost:${PORT}`));
+// ===============================
+// INICIAR SERVIDOR
+// ===============================
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+});
