@@ -3,16 +3,25 @@
 <div class="container">
   <h2>Nueva factura</h2>
 
-  <form>
-    <label>Proveedor</label><br>
-    <input type="text"><br><br>
+  <% if (typeof err !== 'undefined') { %>
+    <div class="alert danger"><%= err %></div>
+  <% } %>
 
-    <label>Fecha</label><br>
-    <input type="date"><br><br>
+  <form method="POST">
+    <label>Número factura</label>
+    <input name="numero" required>
 
-    <button>Guardar factura</button>
+    <label>Fecha</label>
+    <input type="date" name="fecha" required>
+
+    <label>Proveedor</label>
+    <input name="proveedor" required>
+
+    <label>CEDIS</label>
+    <input name="cedis" required>
+
+    <button class="btn btn-primary">Guardar factura</button>
   </form>
 </div>
 
-</body>
-</html>
+<%- include('partials/footer') %>
