@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// LISTADO DE COMPRAS
+/**
+ * LISTADO DE COMPRAS (por factura)
+ */
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -15,8 +17,8 @@ router.get('/', async (req, res) => {
         (c.cantidad * c.precio_unitario) AS total,
         c.solicito,
         c.observacion,
-        f.numero AS factura_numero,
-        f.fecha,
+        f.numero   AS factura_numero,
+        f.fecha    AS factura_fecha,
         f.proveedor,
         f.cedis
       FROM compras c
@@ -24,27 +26,27 @@ router.get('/', async (req, res) => {
       ORDER BY f.fecha DESC, c.id DESC
     `);
 
-    // ✅ CALCULAR TOTAL GENERAL
+    // ✅ TOTAL GENERAL (OBLIGATORIO)
     const totalGeneral = rows.reduce(
-      (acc, r) => acc + Number(r.total || 0),
+      (acc, row) => acc + Number(row.total || 0),
       0
     );
 
     res.render('compras_list', {
-      title: 'Control Proveeduría',
+      title: 'Control de Proveeduría',
       compras: rows,
       totalGeneral,
       errorUI: null
     });
 
-  } catch (err) {
-    console.error('❌ ERROR LISTADO MYSQL:', err);
+  } catch (error) {
+    console.error('❌ ERROR LISTADO MYSQL:', error);
 
     res.render('compras_list', {
-      title: 'Control Proveeduría',
+      title: 'Control de Proveeduría',
       compras: [],
       totalGeneral: 0,
-      errorUI: 'Error consultando compras'
+      errorUI: 'Error consultando compras en la base de datos'
     });
   }
 });

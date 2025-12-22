@@ -1,9 +1,86 @@
-<div class="kpi-card">
-  <div class="kpi-label">Total (según filtros)</div>
-  <div class="kpi-value">
-    ₡ <%= Number(totalGeneral).toLocaleString('es-CR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }) %>
+<%- include('partials/header', { title: title }) %>
+
+<div class="container py-4">
+
+  <% if (errorUI) { %>
+    <div class="alert alert-danger shadow-sm mb-3">
+      <%= errorUI %>
+    </div>
+  <% } %>
+
+  <!-- KPIs -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="kpi-card">
+        <div class="kpi-label">Total general</div>
+        <div class="kpi-value">
+          ₡ <%= Number(totalGeneral).toLocaleString('es-CR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }) %>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Tabla -->
+  <div class="card shadow-sm">
+    <div class="card-body table-responsive">
+
+      <table class="table table-striped align-middle">
+        <thead class="table-dark">
+          <tr>
+            <th>Fecha</th>
+            <th>Factura</th>
+            <th>Cedis</th>
+            <th>Proveedor</th>
+            <th>Placa</th>
+            <th>Producto</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">Precio Unit.</th>
+            <th class="text-end">Total</th>
+            <th>Solicitó</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (compras.length === 0) { %>
+            <tr>
+              <td colspan="11" class="text-center text-muted py-4">
+                No hay registros de compras
+              </td>
+            </tr>
+          <% } %>
+
+          <% compras.forEach(c => { %>
+            <tr>
+              <td><%= new Date(c.factura_fecha).toLocaleDateString('es-CR') %></td>
+              <td><%= c.factura_numero %></td>
+              <td><%= c.cedis %></td>
+              <td><%= c.proveedor %></td>
+              <td class="fw-bold"><%= c.placa %></td>
+              <td><%= c.producto %></td>
+              <td class="text-end"><%= c.cantidad %></td>
+              <td class="text-end">
+                ₡ <%= Number(c.precio_unitario).toLocaleString('es-CR', {
+                  minimumFractionDigits: 2
+                }) %>
+              </td>
+              <td class="text-end fw-semibold">
+                ₡ <%= Number(c.total).toLocaleString('es-CR', {
+                  minimumFractionDigits: 2
+                }) %>
+              </td>
+              <td><%= c.solicito || '-' %></td>
+              <td><%= c.observacion || '-' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+    </div>
+  </div>
+
 </div>
+
+<%- include('partials/footer') %>
