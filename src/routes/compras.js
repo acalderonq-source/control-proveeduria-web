@@ -1,157 +1,189 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db'); // mysql2/promise pool
+const pool = require('../db');
 
-/* ===============================
-   LISTADO DE COMPRAS
-   GET /compras
-================================ */
+/*
+========================================
+ LISTADO GENERAL DE FACTURAS
+========================================
+*/
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT 
-        c.id,
-        c.factura_id,
-        c.placa,
-        c.producto,
-        c.cantidad,
-        c.precio_unitario,
-        (c.cantidad * c.precio_unitario) AS total,
-        c.solicito,
-        c.observacion,
-        f.numero AS factura_numero,
+    const [facturas] = await pool.query(`
+      SELECT
+        f.id AS factura_id,
+        f.numero,
         f.fecha,
         f.proveedor,
-        f.cedis
-      FROM compras c
-      INNER JOIN facturas f ON f.id = c.factura_id
-      ORDER BY f.fecha DESC, c.id DESC
+        f.cedis,
+        IFNULL(SUM(c.cantidad * c.precio_unitario), 0) AS total
+      FROM facturas f
+      LEFT JOIN compras c ON c.factura_id = f.id
+      GROUP BY f.id
+      ORDER BY f.fecha DESC, f.id DESC
     `);
 
-    const totalGeneral = rows.reduce(
-      (sum, r) => sum + Number(r.total || 0),
-      0
-    );
-
     res.render('compras_list', {
-      title: 'Listado de Compras',
-      compras: rows,
-      totalGeneral
+      title: 'Control de facturas',
+      facturas,
+      errorUI: null
     });
+
   } catch (error) {
     console.error('❌ ERROR LISTADO MYSQL:', error);
-    res.status(500).send('Error consultando compras');
+
+    res.render('compras_list', {
+      title: 'Control de facturas',
+      facturas: [],
+      errorUI: 'Error consultando compras en MySQL'
+    });
   }
 });
 
-/* ===============================
-   FORM NUEVA FACTURA
-   GET /compras/factura/nueva
-================================ */
+/*
+========================================
+ FORMULARIO NUEVA FACTURA
+========================================
+*/
 router.get('/factura/nueva', (req, res) => {
   res.render('factura_view', {
     title: 'Nueva factura',
-    error: req.query.err || null
+    errorUI: null,
+    successUI: null
   });
 });
 
-/* ===============================
-   GUARDAR FACTURA
-   POST /compras/factura
-================================ */
-router.post('/factura', async (req, res) => {
-  const { numero, fecha, proveedor, cedis } = req.body;
+/*
+========================================
+ GUARDAR FACTURA + ITEMS
+========================================
+*/
+router.post('/factura/guardar', async (req, res) => {
+  const {
+    numero,
+    fecha,
+    proveedor,
+    cedis,
+    items = []
+  } = req.body;
+
+  if (!numero || !fecha || !proveedor || !cedis) {
+    return res.render('factura_view', {
+      title: 'Nueva factura',
+      errorUI: 'Faltan datos obligatorios de la factura',
+      successUI: null
+    });
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.render('factura_view', {
+      title: 'Nueva factura',
+      errorUI: 'Debe agregar al menos un item',
+      successUI: null
+    });
+  }
+
+  const conn = await pool.getConnection();
 
   try {
-    const [result] = await pool.query(
-      `
-      INSERT INTO facturas (numero, fecha, proveedor, cedis)
-      VALUES (?, ?, ?, ?)
-      `,
+    await conn.beginTransaction();
+
+    // 1️⃣ Insertar factura
+    const [facturaResult] = await conn.query(
+      `INSERT INTO facturas (numero, fecha, proveedor, cedis)
+       VALUES (?, ?, ?, ?)`,
       [numero, fecha, proveedor, cedis]
     );
 
-    res.redirect(`/compras/factura/${result.insertId}`);
+    const facturaId = facturaResult.insertId;
+
+    // 2️⃣ Insertar items
+    for (const item of items) {
+      const {
+        placa,
+        producto,
+        cantidad,
+        precio_unitario,
+        solicito,
+        observacion
+      } = item;
+
+      if (!placa || !producto || !cantidad || !precio_unitario) {
+        throw new Error('Item incompleto');
+      }
+
+      await conn.query(
+        `INSERT INTO compras
+          (factura_id, placa, producto, cantidad, precio_unitario, solicito, observacion)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          facturaId,
+          placa,
+          producto,
+          cantidad,
+          precio_unitario,
+          solicito || null,
+          observacion || null
+        ]
+      );
+    }
+
+    await conn.commit();
+
+    res.redirect('/compras');
+
   } catch (error) {
+    await conn.rollback();
     console.error('❌ ERROR GUARDANDO FACTURA:', error);
-    res.redirect('/compras/factura/nueva?err=Error guardando la factura');
+
+    res.render('factura_view', {
+      title: 'Nueva factura',
+      errorUI: 'Error guardando la factura en MySQL',
+      successUI: null
+    });
+  } finally {
+    conn.release();
   }
 });
 
-/* ===============================
-   VER FACTURA + ITEMS
-   GET /compras/factura/:id
-================================ */
+/*
+========================================
+ VER FACTURA + ITEMS
+========================================
+*/
 router.get('/factura/:id', async (req, res) => {
-  const facturaId = req.params.id;
+  const { id } = req.params;
 
   try {
     const [[factura]] = await pool.query(
       `SELECT * FROM facturas WHERE id = ?`,
-      [facturaId]
+      [id]
     );
 
     if (!factura) {
-      return res.status(404).render('404', {
-        title: 'Factura no encontrada',
-        path: req.originalUrl
-      });
+      return res.redirect('/compras');
     }
 
     const [items] = await pool.query(
-      `SELECT * FROM compras WHERE factura_id = ?`,
-      [facturaId]
+      `SELECT *,
+        (cantidad * precio_unitario) AS total
+       FROM compras
+       WHERE factura_id = ?
+       ORDER BY id`,
+      [id]
     );
 
-    res.render('factura_items', {
+    res.render('factura_view', {
       title: `Factura ${factura.numero}`,
       factura,
-      items
-    });
-  } catch (error) {
-    console.error('❌ ERROR CARGANDO FACTURA:', error);
-    res.status(500).send('Error cargando factura');
-  }
-});
-
-/* ===============================
-   AGREGAR ITEM A FACTURA
-   POST /compras/factura/:id/item
-================================ */
-router.post('/factura/:id/item', async (req, res) => {
-  const facturaId = req.params.id;
-  const { placa, producto, cantidad, precio_unitario, solicito, observacion } =
-    req.body;
-
-  try {
-    await pool.query(
-      `
-      INSERT INTO compras
-      (factura_id, placa, producto, cantidad, precio_unitario, solicito, observacion)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        facturaId,
-        placa,
-        producto,
-        Number(cantidad),
-        Number(precio_unitario),
-        solicito,
-        observacion || null
-      ]
-    );
-
-    res.redirect(`/compras/factura/${facturaId}`);
-  } catch (error) {
-    console.error('❌ ERROR GUARDANDO COMPRA MYSQL:', {
-      message: error.message,
-      sqlMessage: error.sqlMessage,
-      code: error.code
+      items,
+      errorUI: null,
+      successUI: null
     });
 
-    res.redirect(
-      `/compras/factura/${facturaId}?err=Error guardando el ítem`
-    );
+  } catch (error) {
+    console.error('❌ ERROR CONSULTANDO FACTURA:', error);
+    res.redirect('/compras');
   }
 });
 
