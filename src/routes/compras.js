@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-/**
- * LISTADO DE COMPRAS (por factura)
- */
+/* =========================
+   LISTADO DE COMPRAS
+   URL: /compras
+========================= */
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -26,29 +27,38 @@ router.get('/', async (req, res) => {
       ORDER BY f.fecha DESC, c.id DESC
     `);
 
-    // ✅ TOTAL GENERAL (OBLIGATORIO)
     const totalGeneral = rows.reduce(
-      (acc, row) => acc + Number(row.total || 0),
+      (acc, r) => acc + Number(r.total || 0),
       0
     );
 
     res.render('compras_list', {
-      title: 'Control de Proveeduría',
+      title: 'Control Proveeduría',
       compras: rows,
       totalGeneral,
       errorUI: null
     });
 
   } catch (error) {
-    console.error('❌ ERROR LISTADO MYSQL:', error);
+    console.error(error);
 
     res.render('compras_list', {
-      title: 'Control de Proveeduría',
+      title: 'Control Proveeduría',
       compras: [],
       totalGeneral: 0,
-      errorUI: 'Error consultando compras en la base de datos'
+      errorUI: 'Error consultando compras'
     });
   }
+});
+
+/* =========================
+   NUEVA COMPRA (FORM)
+   URL: /compras/nueva
+========================= */
+router.get('/nueva', (req, res) => {
+  res.render('compras_new', {
+    title: 'Registrar compra'
+  });
 });
 
 module.exports = router;
