@@ -2,10 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 
-/**
- * LISTADO DE COMPRAS
- * Muestra compras con datos de la factura
- */
+/* =========================================================
+   LISTADO DE COMPRAS
+   ========================================================= */
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -19,9 +18,9 @@ router.get('/', async (req, res) => {
         (c.cantidad * c.precio_unitario) AS total,
         c.solicito,
         c.observacion,
-        f.numero   AS factura_numero,
-        f.proveedor,
-        f.cedis
+        f.numero     AS factura_numero,
+        f.proveedor  AS proveedor,
+        f.cedis      AS cedis
       FROM compras c
       INNER JOIN facturas f ON f.id = c.factura_id
       ORDER BY c.fecha DESC, c.id DESC
@@ -35,26 +34,26 @@ router.get('/', async (req, res) => {
     res.render('compras_list', {
       title: 'Compras',
       compras: rows,
-      totalGeneral
+      totalGeneral,
+      errorUI: null
     });
 
   } catch (err) {
     console.error('❌ ERROR LISTADO MYSQL:', err);
-    res.status(500).render('compras_list', {
+    res.render('compras_list', {
       title: 'Compras',
       compras: [],
       totalGeneral: 0,
-      errorUI: 'Error consultando compras en MySQL'
+      errorUI: 'Error consultando compras'
     });
   }
 });
 
-/**
- * FORMULARIO NUEVA COMPRA
- */
+/* =========================================================
+   FORMULARIO NUEVA COMPRA
+   ========================================================= */
 router.get('/nueva', async (req, res) => {
   try {
-    // Facturas para seleccionar
     const [facturas] = await pool.query(`
       SELECT id, numero, proveedor
       FROM facturas
@@ -68,14 +67,14 @@ router.get('/nueva', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('❌ ERROR CARGANDO FORM:', err);
+    console.error('❌ ERROR FORM NUEVA:', err);
     res.status(500).send('Error cargando formulario');
   }
 });
 
-/**
- * GUARDAR COMPRA
- */
+/* =========================================================
+   GUARDAR COMPRA
+   ========================================================= */
 router.post('/', async (req, res) => {
   try {
     const {
@@ -89,7 +88,7 @@ router.post('/', async (req, res) => {
       observacion
     } = req.body;
 
-    // Validaciones mínimas
+    // Validación dura
     if (
       !factura_id ||
       !fecha ||
@@ -115,14 +114,14 @@ router.post('/', async (req, res) => {
     `;
 
     const params = [
-      factura_id,
+      Number(factura_id),
       fecha, // YYYY-MM-DD
       placa.trim().toUpperCase(),
       producto.trim(),
       Number(cantidad),
       Number(precio_unitario),
       solicito ? solicito.trim() : null,
-      observacion || null
+      observacion ? observacion.trim() : null
     ];
 
     await pool.query(sql, params);
