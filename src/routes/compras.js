@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const { pool } = require('../db');
 
-/* =========================
-   LISTADO DE COMPRAS
-   URL: /compras
-========================= */
+/**
+ * LISTADO DE COMPRAS
+ * Muestra compras con datos de la factura
+ */
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT 
+      SELECT
         c.id,
+        c.fecha,
         c.placa,
         c.producto,
         c.cantidad,
@@ -18,175 +19,119 @@ router.get('/', async (req, res) => {
         (c.cantidad * c.precio_unitario) AS total,
         c.solicito,
         c.observacion,
-        f.id       AS factura_id,
         f.numero   AS factura_numero,
-        f.fecha    AS factura_fecha,
         f.proveedor,
         f.cedis
       FROM compras c
       INNER JOIN facturas f ON f.id = c.factura_id
-      ORDER BY f.fecha DESC, c.id DESC
+      ORDER BY c.fecha DESC, c.id DESC
     `);
 
-    const totalGeneral = rows.reduce((acc, r) => acc + Number(r.total || 0), 0);
-
-    res.render('compras_list', {
-      title: 'Control Proveeduría',
-      compras: rows,
-      totalGeneral,
-      errorUI: null
+    let totalGeneral = 0;
+    rows.forEach(r => {
+      totalGeneral += Number(r.total || 0);
     });
-  } catch (error) {
-    console.error('❌ ERROR LISTADO MYSQL:', error);
 
     res.render('compras_list', {
-      title: 'Control Proveeduría',
+      title: 'Compras',
+      compras: rows,
+      totalGeneral
+    });
+
+  } catch (err) {
+    console.error('❌ ERROR LISTADO MYSQL:', err);
+    res.status(500).render('compras_list', {
+      title: 'Compras',
       compras: [],
       totalGeneral: 0,
-      errorUI: 'Error consultando compras'
+      errorUI: 'Error consultando compras en MySQL'
     });
   }
 });
 
-/* =========================
-   FORM NUEVA COMPRA
-   URL: /compras/nueva
-========================= */
-router.get('/nueva', (req, res) => {
-  res.render('compras_new', {
-    title: 'Registrar compra',
-    errorUI: null,
-    form: {
-      proveedor: '',
-      factura_numero: '',
-      fecha: '',
-      cedis: '',
-      placa: '',
-      producto: '',
-      cantidad: '',
-      total: '',
-      solicito: '',
-      observacion: ''
-    }
-  });
-});
-
-/* =========================
-   GUARDAR NUEVA COMPRA
-   URL: /compras/nueva  (POST)
-========================= */
-router.post('/nueva', async (req, res) => {
-  const {
-    proveedor,
-    factura_numero,
-    fecha,
-    cedis,
-    placa,
-    producto,
-    cantidad,
-    total,
-    solicito,
-    observacion
-  } = req.body;
-
-  const form = {
-    proveedor,
-    factura_numero,
-    fecha,
-    cedis,
-    placa,
-    producto,
-    cantidad,
-    total,
-    solicito,
-    observacion
-  };
-
-  // Validaciones mínimas (sin inventos raros)
-  if (!proveedor || !factura_numero || !fecha || !cedis || !placa || !producto) {
-    return res.status(400).render('compras_new', {
-      title: 'Registrar compra',
-      errorUI: 'Faltan datos obligatorios (proveedor, factura, fecha, cedis, placa, producto).',
-      form
-    });
-  }
-
-  const cantidadNum = Number(cantidad);
-  const totalNum = Number(total);
-
-  if (!Number.isFinite(cantidadNum) || cantidadNum <= 0) {
-    return res.status(400).render('compras_new', {
-      title: 'Registrar compra',
-      errorUI: 'Cantidad inválida.',
-      form
-    });
-  }
-
-  if (!Number.isFinite(totalNum) || totalNum < 0) {
-    return res.status(400).render('compras_new', {
-      title: 'Registrar compra',
-      errorUI: 'Total inválido.',
-      form
-    });
-  }
-
-  // Guardamos en tu esquema: precio_unitario = total / cantidad
-  const precioUnitario = totalNum / cantidadNum;
-
-  const conn = await pool.getConnection();
+/**
+ * FORMULARIO NUEVA COMPRA
+ */
+router.get('/nueva', async (req, res) => {
   try {
-    await conn.beginTransaction();
+    // Facturas para seleccionar
+    const [facturas] = await pool.query(`
+      SELECT id, numero, proveedor
+      FROM facturas
+      ORDER BY fecha DESC
+    `);
 
-    // 1) Buscar si existe factura (por numero + proveedor) para no duplicar
-    const [fExist] = await conn.query(
-      `SELECT id FROM facturas WHERE numero = ? AND proveedor = ? LIMIT 1`,
-      [factura_numero, proveedor]
-    );
+    res.render('compras_new', {
+      title: 'Nueva compra',
+      facturas,
+      errorUI: null
+    });
 
-    let facturaId;
+  } catch (err) {
+    console.error('❌ ERROR CARGANDO FORM:', err);
+    res.status(500).send('Error cargando formulario');
+  }
+});
 
-    if (fExist.length) {
-      facturaId = fExist[0].id;
-    } else {
-      // 2) Crear factura
-      const [insFactura] = await conn.query(
-        `INSERT INTO facturas (numero, fecha, proveedor, cedis) VALUES (?, ?, ?, ?)`,
-        [factura_numero, fecha, proveedor, cedis]
-      );
-      facturaId = insFactura.insertId;
+/**
+ * GUARDAR COMPRA
+ */
+router.post('/', async (req, res) => {
+  try {
+    const {
+      factura_id,
+      fecha,
+      placa,
+      producto,
+      cantidad,
+      precio_unitario,
+      solicito,
+      observacion
+    } = req.body;
+
+    // Validaciones mínimas
+    if (
+      !factura_id ||
+      !fecha ||
+      !placa ||
+      !producto ||
+      !cantidad ||
+      !precio_unitario
+    ) {
+      return res.status(400).send('Faltan datos obligatorios');
     }
 
-    // 3) Insertar compra ligada a factura
-    await conn.query(
-      `INSERT INTO compras
-        (factura_id, placa, producto, cantidad, precio_unitario, solicito, observacion)
-       VALUES
-        (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        facturaId,
+    const sql = `
+      INSERT INTO compras (
+        factura_id,
+        fecha,
         placa,
         producto,
-        cantidadNum,
-        precioUnitario,
-        solicito || null,
-        observacion || null
-      ]
-    );
+        cantidad,
+        precio_unitario,
+        solicito,
+        observacion
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    await conn.commit();
+    const params = [
+      factura_id,
+      fecha, // YYYY-MM-DD
+      placa.trim().toUpperCase(),
+      producto.trim(),
+      Number(cantidad),
+      Number(precio_unitario),
+      solicito ? solicito.trim() : null,
+      observacion || null
+    ];
+
+    await pool.query(sql, params);
 
     res.redirect('/compras');
-  } catch (error) {
-    await conn.rollback();
-    console.error('❌ ERROR GUARDANDO COMPRA:', error);
 
-    res.status(500).render('compras_new', {
-      title: 'Registrar compra',
-      errorUI: 'Error guardando la compra en MySQL',
-      form
-    });
-  } finally {
-    conn.release();
+  } catch (err) {
+    console.error('❌ ERROR GUARDANDO COMPRA:', err);
+    res.status(500).send('Error guardando la compra en MySQL');
   }
 });
 
