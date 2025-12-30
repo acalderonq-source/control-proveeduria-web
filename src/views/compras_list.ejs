@@ -1,83 +1,143 @@
-<%- include('partials/header', { title: title }) %>
+<%- include('partials/header', { title: 'Listado de compras' }) %>
 
 <div class="container py-4">
 
-  <% if (errorUI) { %>
-    <div class="alert alert-danger shadow-sm mb-3">
-      <%= errorUI %>
-    </div>
-  <% } %>
+  <!-- TÍTULO + BOTÓN -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Listado de compras</h2>
 
-  <!-- KPIs -->
-  <div class="row mb-4">
-    <div class="col-md-4">
-      <div class="kpi-card">
-        <div class="kpi-label">Total general</div>
-        <div class="kpi-value">
-          ₡ <%= Number(totalGeneral).toLocaleString('es-CR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) %>
+    <a href="/compras/nueva" class="btn btn-primary">
+      ➕ Registrar nueva compra
+    </a>
+  </div>
+
+  <!-- FILTROS -->
+  <form method="GET" action="/compras" class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+
+        <!-- SEMANA -->
+        <div class="col-md-2">
+          <label class="form-label">Semana</label>
+          <input
+            type="week"
+            name="semana"
+            class="form-control"
+            value="<%= query?.semana || '' %>"
+          >
         </div>
+
+        <!-- PLACA -->
+        <div class="col-md-2">
+          <label class="form-label">Placa</label>
+          <input
+            type="text"
+            name="placa"
+            class="form-control"
+            placeholder="Ej: C162129"
+            value="<%= query?.placa || '' %>"
+          >
+        </div>
+
+        <!-- PROVEEDOR -->
+        <div class="col-md-3">
+          <label class="form-label">Proveedor</label>
+          <input
+            type="text"
+            name="proveedor"
+            class="form-control"
+            placeholder="Proveedor"
+            value="<%= query?.proveedor || '' %>"
+          >
+        </div>
+
+        <!-- CEDIS -->
+        <div class="col-md-3">
+          <label class="form-label">CEDIS</label>
+          <select name="cedis" class="form-select">
+            <option value="">Todos</option>
+            <option value="CARTAGO" <%= query?.cedis === 'CARTAGO' ? 'selected' : '' %>>CARTAGO</option>
+            <option value="ALAJUELA" <%= query?.cedis === 'ALAJUELA' ? 'selected' : '' %>>ALAJUELA</option>
+            <option value="GUAPILES" <%= query?.cedis === 'GUAPILES' ? 'selected' : '' %>>GUAPILES</option>
+            <option value="TRANSPORTADORA" <%= query?.cedis === 'TRANSPORTADORA' ? 'selected' : '' %>>TRANSPORTADORA</option>
+          </select>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="col-md-2 d-grid gap-2">
+          <button class="btn btn-primary">Filtrar</button>
+
+          <a
+            href="/compras/export/excel?<%= new URLSearchParams(query || {}).toString() %>"
+            class="btn btn-success"
+          >
+            Descargar Excel
+          </a>
+        </div>
+
       </div>
+    </div>
+  </form>
+
+  <!-- TOTAL GENERAL -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <small class="text-muted">Total general</small>
+      <h2 class="fw-bold text-success mb-0">
+        ₡ <%= Number(totalGeneral || 0).toLocaleString('es-CR', { minimumFractionDigits: 2 }) %>
+      </h2>
     </div>
   </div>
 
-  <!-- Tabla -->
+  <!-- TABLA -->
   <div class="card shadow-sm">
-    <div class="card-body table-responsive">
-
-      <table class="table table-striped align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th>Fecha</th>
-            <th>Factura</th>
-            <th>Cedis</th>
-            <th>Proveedor</th>
-            <th>Placa</th>
-            <th>Producto</th>
-            <th class="text-end">Cantidad</th>
-            <th class="text-end">Precio Unit.</th>
-            <th class="text-end">Total</th>
-            <th>Solicitó</th>
-            <th>Obs.</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (compras.length === 0) { %>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
             <tr>
-              <td colspan="11" class="text-center text-muted py-4">
-                No hay registros de compras
-              </td>
+              <th>Fecha</th>
+              <th>CEDIS</th>
+              <th>Proveedor</th>
+              <th>Placa</th>
+              <th>Producto</th>
+              <th class="text-end">Cant.</th>
+              <th class="text-end">Precio</th>
+              <th class="text-end">Total</th>
+              <th>Solicitó</th>
             </tr>
-          <% } %>
+          </thead>
 
-          <% compras.forEach(c => { %>
-            <tr>
-              <td><%= new Date(c.factura_fecha).toLocaleDateString('es-CR') %></td>
-              <td><%= c.factura_numero %></td>
-              <td><%= c.cedis %></td>
-              <td><%= c.proveedor %></td>
-              <td class="fw-bold"><%= c.placa %></td>
-              <td><%= c.producto %></td>
-              <td class="text-end"><%= c.cantidad %></td>
-              <td class="text-end">
-                ₡ <%= Number(c.precio_unitario).toLocaleString('es-CR', {
-                  minimumFractionDigits: 2
-                }) %>
-              </td>
-              <td class="text-end fw-semibold">
-                ₡ <%= Number(c.total).toLocaleString('es-CR', {
-                  minimumFractionDigits: 2
-                }) %>
-              </td>
-              <td><%= c.solicito || '-' %></td>
-              <td><%= c.observacion || '-' %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+          <tbody>
+            <% if (!compras || compras.length === 0) { %>
+              <tr>
+                <td colspan="9" class="text-center text-muted py-4">
+                  No hay registros de compras
+                </td>
+              </tr>
+            <% } %>
 
+            <% compras.forEach(c => { %>
+              <tr>
+                <td><%= c.fecha %></td>
+                <td><%= c.cedis %></td>
+                <td><%= c.proveedor %></td>
+                <td><%= c.placa %></td>
+                <td><%= c.producto %></td>
+                <td class="text-end"><%= Number(c.cantidad).toFixed(2) %></td>
+                <td class="text-end">
+                  ₡ <%= Number(c.precio_unitario).toLocaleString('es-CR', { minimumFractionDigits: 2 }) %>
+                </td>
+                <td class="text-end fw-bold">
+                  ₡ <%= Number(c.precio_total).toLocaleString('es-CR', { minimumFractionDigits: 2 }) %>
+                </td>
+                <td><%= c.solicito %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+
+        </table>
+      </div>
     </div>
   </div>
 

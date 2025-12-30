@@ -1,91 +1,78 @@
-:root{
-  --bg: #0b1220;
-  --card: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --line: #e5e7eb;
-  --brand: #2563eb;
-  --brand2: #22c55e;
+body {
+  background: linear-gradient(120deg, #eef2f7, #f8fafc);
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  color: #1f2937;
 }
 
-body{
-  background:
-    radial-gradient(900px 500px at 20% 10%, rgba(37,99,235,.20), transparent 60%),
-    radial-gradient(700px 400px at 85% 20%, rgba(34,197,94,.18), transparent 60%),
-    #f6f7fb;
+/* Encabezado */
+.navbar {
+  background: linear-gradient(90deg, #0f172a, #1e293b);
 }
 
-.page-wrap{
-  min-height: calc(100vh - 60px);
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
-.nav-pro{
-  background: linear-gradient(90deg, #0b1220, #111827);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+/* Contenedor principal */
+.container {
+  max-width: 1400px;
 }
 
-.kpi-card{
-  background: rgba(255,255,255,.8);
-  border: 1px solid rgba(15,23,42,.08);
+/* Tarjeta */
+.card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* KPI */
+.kpi {
+  background: white;
+  padding: 20px;
   border-radius: 14px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 25px rgba(15,23,42,.06);
-  min-width: 220px;
-}
-.kpi-label{
-  font-size: .78rem;
-  color: var(--muted);
-}
-.kpi-value{
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: .2px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
 }
 
-.table-head th{
-  background: #0b1220 !important;
-  color: #fff !important;
-  border-color: rgba(255,255,255,.12) !important;
+.kpi h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.kpi h2 {
+  margin: 5px 0 0;
+  color: #0f172a;
   font-weight: 700;
-  font-size: .85rem;
-  white-space: nowrap;
 }
 
-.badge-soft{
-  background: rgba(37,99,235,.10);
-  color: #1d4ed8;
-  border: 1px solid rgba(37,99,235,.18);
-  font-weight: 700;
-  padding: 6px 10px;
+/* Tabla */
+.table thead {
+  background: #0f172a;
+  color: white;
 }
 
-.mono{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: .92rem;
+.table th {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.disabled-field{
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.card{
-  border-radius: 16px !important;
-}
-
-.btn{
-  border-radius: 12px !important;
-}
-
-.form-control, .form-select{
-  border-radius: 12px !important;
-}
-
-.table td{
+.table td {
   vertical-align: middle;
 }
 
-.table-hover tbody tr:hover{
-  background: rgba(37,99,235,.04);
+.table tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* Botón */
+.btn-primary {
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(90deg, #1d4ed8, #1e40af);
 }

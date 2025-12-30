@@ -1,75 +1,121 @@
-<%- include('partials/header', { title }) %>
+<%- include('partials/header', { title: 'Nueva compra' }) %>
 
 <div class="container py-4">
-  <h2 class="mb-3">Registrar compra</h2>
 
-  <% if (errorUI) { %>
-    <div class="alert alert-danger"><%= errorUI %></div>
-  <% } %>
+  <h3 class="mb-4">Nueva compra</h3>
 
-  <form method="POST" action="/compras/nueva">
-    <div class="row g-3">
+  <form method="POST" action="/compras" class="row g-3">
 
-      <div class="col-md-4">
-        <label class="form-label">Proveedor</label>
-        <input name="proveedor" class="form-control" required value="<%= form?.proveedor || '' %>">
-      </div>
+<div class="col-md-4">
+  <label class="form-label">Proveedor</label>
+  <select name="proveedor" class="form-select" required>
+    <option value="">Seleccione proveedor</option>
+    <option value="PURDY">Purdy</option>
+    <option value="MAXI">Maxi</option>
+    <option value="SERVI">Servi</option>
+    <option value="DAITOMA">Daitoma</option>
+    <option value="AROS Y LLANTAS MUNDIALES">Aros y Llantas Mundiales</option>
+    <option value="ET BATERIAS">ET Baterías</option>
+    <option value="LAPA GREEN">Lapa Green</option>
+    <option value="CASA CAMION">Casa Camion</option>
+    <option value="AMERICA REPUESTOS">America Repuestos</option>
+    <option value="PINTURAS ALEX">Pinturas Alex</option>
+    <option value="ALMACEN SAN NICOLAS">Almacen San Nicolas</option>
+    <option value="OTRO">Otro</option>
+  </select>
+</div>
 
-      <div class="col-md-2">
-        <label class="form-label">Factura #</label>
-        <input name="factura_numero" class="form-control" required value="<%= form?.factura_numero || '' %>">
-      </div>
+<div class="col-md-3">
+  <label class="form-label">Fecha</label>
+  <input
+    type="date"
+    name="fecha"
+    class="form-control"
+    required
+    value="<%= new Date().toISOString().split('T')[0] %>"
+  >
+</div>
 
-      <div class="col-md-3">
-        <label class="form-label">Fecha</label>
-        <input type="date" name="fecha" class="form-control" required value="<%= form?.fecha || '' %>">
-      </div>
 
-      <div class="col-md-3">
-        <label class="form-label">CEDIS</label>
-        <input name="cedis" class="form-control" required value="<%= form?.cedis || '' %>">
-      </div>
-
-      <hr class="my-2">
-
-      <div class="col-md-3">
-        <label class="form-label">Placa</label>
-        <input name="placa" class="form-control" required value="<%= form?.placa || '' %>">
-      </div>
-
-      <div class="col-md-5">
-        <label class="form-label">Producto</label>
-        <input name="producto" class="form-control" required value="<%= form?.producto || '' %>">
-      </div>
-
-      <div class="col-md-2">
-        <label class="form-label">Cantidad</label>
-        <input type="number" step="0.01" name="cantidad" class="form-control" required value="<%= form?.cantidad || '' %>">
-      </div>
-
-      <div class="col-md-2">
-        <label class="form-label">Total ₡</label>
-        <input type="number" step="0.01" name="total" class="form-control" required value="<%= form?.total || '' %>">
-        <div class="form-text">El sistema calcula el precio unitario.</div>
-      </div>
-
-      <div class="col-md-4">
-        <label class="form-label">Solicitó</label>
-        <input name="solicito" class="form-control" value="<%= form?.solicito || '' %>">
-      </div>
-
-      <div class="col-md-8">
-        <label class="form-label">Observación</label>
-        <input name="observacion" class="form-control" value="<%= form?.observacion || '' %>">
-      </div>
-
+    <!-- CEDIS -->
+    <div class="col-md-4">
+      <label class="form-label">CEDIS</label>
+      <select name="cedis" class="form-select" required>
+        <option value="">Seleccione</option>
+        <option value="CARTAGO">Cartago</option>
+        <option value="ALAJUELA">Alajuela</option>
+        <option value="NICOYA">Nicoya</option>
+        <option value="LA CRUZ">La Cruz</option>
+        <option value="PEREZ ZELEDON">Perez Zeledon</option>
+        <option value="SAN CARLOS">San Carlos</option>
+        <option value="TRANSPORTADORA">Transportadora</option>
+        <option value="GUAPILES">Guapiles</option>
+      </select>
     </div>
 
-    <div class="mt-4">
-      <button class="btn btn-primary">Guardar</button>
-      <a href="/compras" class="btn btn-secondary">Volver</a>
+    <!-- PLACA -->
+    <div class="col-md-4">
+      <label class="form-label">Placa</label>
+      <input name="placa" class="form-control" required placeholder="Ej: C156672">
     </div>
+
+    <!-- PRODUCTO -->
+    <div class="col-md-6">
+      <label class="form-label">Producto</label>
+      <input name="producto" class="form-control" required>
+    </div>
+
+    <!-- CANTIDAD -->
+    <div class="col-md-3">
+      <label class="form-label">Cantidad</label>
+      <input
+        name="cantidad"
+        type="number"
+        step="0.01"
+        min="0"
+        class="form-control"
+        required
+      >
+    </div>
+
+    <!-- PRECIO UNITARIO -->
+    <div class="col-md-3">
+      <label class="form-label">Precio unitario (₡)</label>
+      <input
+        name="precio_unitario"
+        type="number"
+        step="0.01"
+        min="0"
+        class="form-control"
+        required
+      >
+    </div>
+
+    <!-- SOLICITÓ -->
+    <div class="col-md-6">
+      <label class="form-label">Solicitó</label>
+      <input name="solicito" class="form-control" placeholder="Nombre">
+    </div>
+
+    <!-- OBSERVACIÓN -->
+    <div class="col-md-6">
+      <label class="form-label">Observación</label>
+      <textarea name="observacion" class="form-control" rows="2"></textarea>
+    </div>
+
+    <!-- BOTONES -->
+    <div class="col-12 mt-4">
+      <button type="submit" class="btn btn-primary">
+        Guardar compra
+      </button>
+
+      <a href="/compras" class="btn btn-secondary ms-2">
+        Cancelar
+      </a>
+    </div>
+
   </form>
+
 </div>
 
 <%- include('partials/footer') %>

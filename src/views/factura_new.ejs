@@ -1,26 +1,70 @@
 <%- include('partials/header', { title }) %>
 
-<div class="container">
-  <h2>Nueva factura</h2>
+<div class="container py-4">
+  <h3 class="mb-4">Registrar nueva compra</h3>
 
-  <% if (typeof err !== 'undefined') { %>
-    <div class="alert danger"><%= err %></div>
-  <% } %>
+  <form method="POST" action="/compras" class="row g-3">
 
-  <form method="POST">
-    <label>Número factura</label>
-    <input name="numero" required>
+    <div class="col-md-4">
+      <label class="form-label">Proveedor</label>
+      <select name="proveedor" class="form-select" required>
+        <option value="">Seleccione proveedor</option>
+        <option value="PURDY">Purdy</option>
+        <option value="MAXI">Maxi</option>
+        <option value="SERVI">Servi</option>
+        <option value="DAITOMA">Daitoma</option>
+        <option value="AROS Y LLANTAS MUNDIALES">Aros y Llantas Mundiales</option>
+        <option value="ET BATERIAS">ET Baterías</option>
+        <option value="LAPA GREEN">Lapa Green</option>
+        <option value="OTRO">Otro</option>
+      </select>
+    </div>
 
-    <label>Fecha</label>
-    <input type="date" name="fecha" required>
+    <div class="col-md-4">
+      <label class="form-label">CEDIS</label>
+      <select name="cedis" class="form-select" required>
+        <option value="">Seleccione CEDIS</option>
+        <option value="CARTAGO">Cartago</option>
+        <option value="ALAJUELA">Alajuela</option>
+        <option value="LA CRUZ">La Cruz</option>
+      </select>
+    </div>
 
-    <label>Proveedor</label>
-    <input name="proveedor" required>
+    <div class="col-md-4">
+      <label class="form-label">Placa</label>
+      <input name="placa" class="form-control" required>
+    </div>
 
-    <label>CEDIS</label>
-    <input name="cedis" required>
+    <div class="col-md-6">
+      <label class="form-label">Producto</label>
+      <input name="producto" class="form-control" required>
+    </div>
 
-    <button class="btn btn-primary">Guardar factura</button>
+    <div class="col-md-3">
+      <label class="form-label">Cantidad</label>
+      <input type="number" step="1" name="cantidad" class="form-control" required>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Precio unitario</label>
+      <input type="number" step="0.01" name="precio_unitario" class="form-control" required>
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Solicitó</label>
+      <input name="solicito" class="form-control">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">Observación</label>
+      <input name="observacion" class="form-control">
+    </div>
+
+    <div class="col-12">
+      <button class="btn btn-primary">Guardar compra</button>
+      <a href="/compras" class="btn btn-secondary ms-2">Cancelar</a>
+    </div>
+
   </form>
 </div>
 
